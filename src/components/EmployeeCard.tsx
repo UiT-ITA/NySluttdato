@@ -24,9 +24,14 @@ export function EmployeeCard({ employeeReport, calculation }: EmployeeCardProps)
   return (
     <article className="employee-card">
       <header className="employee-header">
-        <div>
+        <div className="employee-title-block">
           <p className="card-label">Employee</p>
-          <h2>{employeeReport.employeeId}</h2>
+          <div className="employee-title-row">
+            <h2>{employeeReport.employeeId}</h2>
+            <span className={`employee-badge${calculation?.skippedCodes.length ? ' warning' : ''}`}>
+              {calculation?.skippedCodes.length ? 'Contains unsupported codes' : 'Ready'}
+            </span>
+          </div>
         </div>
 
         <div className="final-date-box">
@@ -39,6 +44,10 @@ export function EmployeeCard({ employeeReport, calculation }: EmployeeCardProps)
         <div>
           <span>Initial end date</span>
           <strong>{calculation ? formatDate(calculation.initialEndDate) : 'Not calculated'}</strong>
+        </div>
+        <div>
+          <span>Rule steps</span>
+          <strong>{calculation ? calculation.steps.length : '-'}</strong>
         </div>
         <div>
           <span>Vacation base days</span>

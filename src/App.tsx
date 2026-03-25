@@ -5,6 +5,7 @@ import { EmployeeCard } from './components/EmployeeCard'
 import {
   calculateEmployeeResult,
   formatDate,
+  formatNumber,
   parseDateInput,
   parseWorkbook,
   toDateInputValue,
@@ -29,6 +30,16 @@ function App() {
   const calculationByEmployeeId = new Map(
     calculations.map((calculation) => [calculation.employeeId, calculation]),
   )
+  const totalEmployees = report?.employees.length ?? 0
+  const totalRows = report?.employees.reduce((sum, employee) => sum + employee.rows.length, 0) ?? 0
+  const totalAppliedDays = calculations.reduce(
+    (sum, calculation) =>
+      sum + calculation.steps.reduce((stepTotal, step) => stepTotal + step.appliedDaysToAdd, 0),
+    0,
+  )
+  const warningCount =
+    (report?.skippedRows.length ?? 0) +
+    calculations.reduce((sum, calculation) => sum + calculation.skippedCodes.length, 0)
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -67,89 +78,153 @@ function App() {
 
   return (
     <main className="shell">
-      <section className="hero-panel">
-        <div className="hero-copy">
-          <p className="eyebrow">PhD absence extension checker</p>
-          <h1>Upload an absence report and get the recalculated end date.</h1>
-          <p className="lede">
-            The calculator reads the Excel report, applies the leave-code rules from the
-            uploaded guideline, and shows the new end date with a step-by-step breakdown.
-          </p>
+      <header className="app-header">
+        <div>
+          <p className="eyebrow">PhDChecker</p>
+          <h1>Absence extension calculator</h1>
         </div>
+        <div className="header-meta">
+          <span className="header-chip">Internal review tool</span>
+          <span className="header-chip">Workbook-driven calculation</span>
+        </div>
+      </header>
 
-        <div className="upload-card">
-          <label className="file-picker" htmlFor="report-upload">
-            <span>Choose absence report</span>
-            <strong>{selectedFileName || 'Select .xlsx file'}</strong>
-          </label>
-          <input
-            id="report-upload"
-            type="file"
-            accept=".xlsx"
-            onChange={handleFileChange}
-          />
+      <section className="workspace-layout">
+        <aside className="control-rail">
+          <section className="rail-section">
+            <div className="section-heading-block">
+              <p className="eyebrow">Input</p>
+              <h2>Workbook source</h2>
+            </div>
 
-          <label className="date-field">
-            <span>Current end date</span>
+            <label className="file-picker" htmlFor="report-upload">
+              <span>Excel workbook</span>
+              <strong>{selectedFileName || 'Select .xlsx file'}</strong>
+            </label>
             <input
-              type="date"
-              value={dateOverride}
-              onChange={(event) => setDateOverride(event.target.value)}
+              id="report-upload"
+              type="file"
+              accept=".xlsx"
+              onChange={handleFileChange}
             />
-          </label>
 
-          <div className="rule-strip">
-            <span>Calendar-day codes extend by consecutive dates.</span>
-            <span>Working-day codes skip weekends and Norwegian public holidays.</span>
-            <span>Codes 470 and 091 are grouped before the final vacation-day pass, and 091 can be read from the Ammefri sheet.</span>
+            <label className="date-field">
+              <span>Current end date</span>
+              <input
+                type="date"
+                value={dateOverride}
+                onChange={(event) => setDateOverride(event.target.value)}
+              />
+            </label>
+
+            {isLoading ? <p className="status">Reading workbook...</p> : null}
+            {errorMessage ? <p className="status error">{errorMessage}</p> : null}
+            {!effectiveStartDate && report ? (
+              <p className="status error">Set a valid current end date to run the calculation.</p>
+            ) : null}
+          </section>
+
+          <section className="rail-section metric-rail">
+            <div className="section-heading-block">
+              <p className="eyebrow">Overview</p>
+              <h2>Run status</h2>
+            </div>
+
+            <div className="metric-list">
+              <div className="metric-row">
+                <span>Employees</span>
+                <strong>{totalEmployees}</strong>
+              </div>
+              <div className="metric-row">
+                <span>Parsed rows</span>
+                <strong>{totalRows}</strong>
+              </div>
+              <div className="metric-row">
+                <span>Applied days</span>
+                <strong>{formatNumber(totalAppliedDays)}</strong>
+              </div>
+              <div className="metric-row">
+                <span>Warnings</span>
+                <strong>{warningCount}</strong>
+              </div>
+              <div className="metric-row">
+                <span>Basis date</span>
+                <strong>{effectiveStartDate ? formatDate(effectiveStartDate) : 'Not set'}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="rail-section rules-panel">
+            <div className="section-heading-block">
+              <p className="eyebrow">Rules</p>
+              <h2>Calculation behavior</h2>
+            </div>
+
+            <ul className="rule-list">
+              <li>Calendar-day codes extend by consecutive dates.</li>
+              <li>Working-day codes skip weekends and Norwegian public holidays.</li>
+              <li>Codes 470 and 091 are grouped before the vacation-day pass.</li>
+              <li>Code 091 can be read from the Ammefri sheet.</li>
+            </ul>
+          </section>
+        </aside>
+
+        <section className="main-panel">
+          <div className="workspace-toolbar">
+            <div className="section-heading-block">
+              <p className="eyebrow">Analysis</p>
+              <h2>Employee results</h2>
+            </div>
+
+            <div className="toolbar-stats">
+              <div>
+                <span>Workbook</span>
+                <strong>{selectedFileName || 'None loaded'}</strong>
+              </div>
+              <div>
+                <span>Records</span>
+                <strong>{totalEmployees}</strong>
+              </div>
+            </div>
           </div>
 
-          {isLoading ? <p className="status">Reading workbook…</p> : null}
-          {errorMessage ? <p className="status error">{errorMessage}</p> : null}
-          {!effectiveStartDate && report ? (
-            <p className="status error">Set a valid current end date to run the calculation.</p>
+          {report?.skippedRows.length ? (
+            <section className="warning-panel">
+              <div className="warning-panel-header">
+                <p className="eyebrow">Data issues</p>
+                <strong>{report.skippedRows.length} skipped rows</strong>
+              </div>
+              <ul>
+                {report.skippedRows.map((row) => (
+                  <li key={`${row.rowNumber}-${row.reason}`}>
+                    Row {row.rowNumber}: {row.reason}
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
-        </div>
-      </section>
 
-      <section className="summary-grid">
-        <article className="info-card">
-          <p className="card-label">Detected employees</p>
-          <strong>{report?.employees.length ?? 0}</strong>
-        </article>
-        <article className="info-card">
-          <p className="card-label">Parsed rows</p>
-          <strong>
-            {report?.employees.reduce((sum, employee) => sum + employee.rows.length, 0) ?? 0}
-          </strong>
-        </article>
-        <article className="info-card">
-          <p className="card-label">Start from</p>
-          <strong>{effectiveStartDate ? formatDate(effectiveStartDate) : 'Not set'}</strong>
-        </article>
-      </section>
-
-      {report?.skippedRows.length ? (
-        <section className="warning-card">
-          <h2>Skipped rows</h2>
-          <ul>
-            {report.skippedRows.map((row) => (
-              <li key={`${row.rowNumber}-${row.reason}`}>
-                Row {row.rowNumber}: {row.reason}
-              </li>
-            ))}
-          </ul>
+          <section className="results-stack">
+            {report?.employees.length ? (
+              report.employees.map((employeeReport) => (
+                <EmployeeCard
+                  key={employeeReport.employeeId}
+                  employeeReport={employeeReport}
+                  calculation={calculationByEmployeeId.get(employeeReport.employeeId)}
+                />
+              ))
+            ) : (
+              <section className="empty-state">
+                <p className="eyebrow">No dataset loaded</p>
+                <h2>Upload a workbook to populate the review workspace.</h2>
+                <p>
+                  The results area will show employee-level calculations, source-code groupings,
+                  and the applied extension steps.
+                </p>
+              </section>
+            )}
+          </section>
         </section>
-      ) : null}
-
-      <section className="results-stack">
-        {report?.employees.map((employeeReport) => (
-          <EmployeeCard
-            key={employeeReport.employeeId}
-            employeeReport={employeeReport}
-            calculation={calculationByEmployeeId.get(employeeReport.employeeId)}
-          />
-        ))}
       </section>
     </main>
   )
