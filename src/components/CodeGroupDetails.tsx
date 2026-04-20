@@ -25,21 +25,20 @@ export function CodeGroupDetails({ code, rows, calculationSteps }: CodeGroupDeta
   const showWorkedPercent = rows.some((row) => typeof row.workPercent === 'number')
   const showPartTimePercent = rows.some((row) => typeof row.partTimePercent === 'number')
   const showExtraPercent = rows.some((row) => typeof row.extraPercent === 'number')
-  const showHours = code !== '091' && rows.some((row) => typeof row.hours === 'number')
+  const showHours = rows.some((row) => typeof row.hours === 'number')
   const totalHours = showHours ? rows.reduce((sum, row) => sum + (row.hours ?? 0), 0) : 0
   const totalContribution = rowDetails.reduce(
     (sum, detail) => sum + (detail.preview?.rawDaysToAdd ?? 0),
     0,
   )
   const directCodeSteps = calculationSteps.filter((step) => step.code === code)
-  const totalAppliedForCode = directCodeSteps.reduce(
-    (sum, step) => sum + step.appliedDaysToAdd,
-    0,
+  const groupedCodeSteps = calculationSteps.filter(
+    (step) => step.groupedSources?.some((source) => source.code === code) ?? false,
   )
-  const isGroupedRule = Boolean(firstPreview?.isGroupedRule)
-  const showAppliedSummary = !isGroupedRule
-  const showAppliedDaysColumn = !isGroupedRule
-  const showContributionSummary = isGroupedRule
+  const relevantSteps = directCodeSteps.length ? directCodeSteps : groupedCodeSteps
+  const totalAppliedForCode = relevantSteps.reduce((sum, step) => sum + step.appliedDaysToAdd, 0)
+  const totalVacationBaseForCode = relevantSteps.reduce((sum, step) => sum + (step.vacationBaseDays ?? 0), 0)
+  const isSummationCode = firstPreview?.summationRule != null
 
   return (
     <details className="code-group-card">
@@ -52,16 +51,15 @@ export function CodeGroupDetails({ code, rows, calculationSteps }: CodeGroupDeta
 
         <div className="summary-pill-row">
           <span className="summary-pill">Rows: {rows.length}</span>
-          {showContributionSummary ? (
-            <span className="summary-pill">
-              Total contribution: {formatPreciseNumber(totalContribution)} days
-            </span>
-          ) : null}
+          <span className="summary-pill">Calculated total: {formatPreciseNumber(totalContribution)} days</span>
           {showHours ? (
             <span className="summary-pill">Total hours: {formatPreciseNumber(totalHours)} h</span>
           ) : null}
-          {showAppliedSummary ? (
-            <span className="summary-pill">Applied days: {formatNumber(totalAppliedForCode)}</span>
+          <span className="summary-pill">Applied days: {formatNumber(totalAppliedForCode)}</span>
+          {firstPreview?.vacationEligible ? (
+            <span className="summary-pill">
+              Vacation basis: {formatPreciseNumber(totalVacationBaseForCode)} days
+            </span>
           ) : null}
           {singleSourceSheet && singleSourceSheet !== 'Leave' ? (
             <span className="summary-pill">Sheet: {singleSourceSheet}</span>
@@ -75,22 +73,24 @@ export function CodeGroupDetails({ code, rows, calculationSteps }: CodeGroupDeta
             <span>Rows</span>
             <strong>{rows.length}</strong>
           </div>
-          {showContributionSummary ? (
+          <div>
+            <span>Calculated total</span>
+            <strong>{formatPreciseNumber(totalContribution)} days</strong>
+          </div>
+          <div>
+            <span>Applied days</span>
+            <strong>{formatNumber(totalAppliedForCode)}</strong>
+          </div>
+          {firstPreview?.vacationEligible ? (
             <div>
-              <span>Total contribution</span>
-              <strong>{formatPreciseNumber(totalContribution)} days</strong>
+              <span>Vacation basis</span>
+              <strong>{formatPreciseNumber(totalVacationBaseForCode)} days</strong>
             </div>
           ) : null}
-          {showHours ? (
+          {isSummationCode ? (
             <div>
-              <span>Total hours</span>
-              <strong>{formatPreciseNumber(totalHours)} h</strong>
-            </div>
-          ) : null}
-          {showAppliedSummary ? (
-            <div>
-              <span>Applied days</span>
-              <strong>{formatNumber(totalAppliedForCode)}</strong>
+              <span>Grouped by</span>
+              <strong>Summeringsregel {firstPreview.summationRule}</strong>
             </div>
           ) : null}
         </div>
@@ -104,11 +104,12 @@ export function CodeGroupDetails({ code, rows, calculationSteps }: CodeGroupDeta
                 <th>To</th>
                 {showWorkedPercent ? <th>Worked %</th> : null}
                 {showPartTimePercent ? <th>Part-time %</th> : null}
-                {showExtraPercent ? <th>Leave basis %</th> : null}
+                {showExtraPercent ? <th>Ignored %</th> : null}
                 {showHours ? <th>Hours</th> : null}
                 <th>Base days</th>
+                <th>Absence fraction</th>
                 <th>Calculated days</th>
-                {showAppliedDaysColumn ? <th>Applied days</th> : null}
+                <th>Rounding preview</th>
               </tr>
             </thead>
             <tbody>
@@ -141,10 +142,9 @@ export function CodeGroupDetails({ code, rows, calculationSteps }: CodeGroupDeta
                     <td>{typeof row.hours === 'number' ? `${formatPreciseNumber(row.hours)} h` : '-'}</td>
                   ) : null}
                   <td>{preview ? formatPreciseNumber(preview.baseDays) : '-'}</td>
+                  <td>{preview ? formatPreciseNumber(preview.absenceFraction) : '-'}</td>
                   <td>{preview ? formatPreciseNumber(preview.rawDaysToAdd) : '-'}</td>
-                  {showAppliedDaysColumn ? (
-                    <td>{preview ? formatPreciseNumber(preview.roundedDaysToAdd) : '-'}</td>
-                  ) : null}
+                  <td>{preview ? formatPreciseNumber(preview.roundedDaysToAdd) : '-'}</td>
                 </tr>
               ))}
             </tbody>

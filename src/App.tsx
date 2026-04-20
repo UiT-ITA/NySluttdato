@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import readXlsxFile, { readSheetNames } from 'read-excel-file/browser'
 import './App.css'
 import { EmployeeCard } from './components/EmployeeCard'
@@ -17,29 +17,29 @@ function App() {
   const [report, setReport] = useState<ParsedWorkbook | null>(null)
   const [selectedFileName, setSelectedFileName] = useState('')
   const [dateOverride, setDateOverride] = useState('')
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const effectiveStartDate = dateOverride ? parseDateInput(dateOverride) : report?.currentEndDate ?? null
-  const calculations: EmployeeCalculation[] =
-    report && effectiveStartDate
-      ? report.employees.map((employee) =>
-          calculateEmployeeResult(employee.employeeId, employee.rows, effectiveStartDate),
-        )
-      : []
-  const calculationByEmployeeId = new Map(
-    calculations.map((calculation) => [calculation.employeeId, calculation]),
+  const activeEmployeeId = selectedEmployeeId || report?.employees[0]?.employeeId || ''
+
+  const selectedEmployee = useMemo(
+    () => report?.employees.find((employee) => employee.employeeId === activeEmployeeId) ?? null,
+    [activeEmployeeId, report],
   )
+
+  const calculation: EmployeeCalculation | null =
+    selectedEmployee && effectiveStartDate
+      ? calculateEmployeeResult(selectedEmployee.employeeId, selectedEmployee.rows, effectiveStartDate)
+      : null
+
   const totalEmployees = report?.employees.length ?? 0
   const totalRows = report?.employees.reduce((sum, employee) => sum + employee.rows.length, 0) ?? 0
-  const totalAppliedDays = calculations.reduce(
-    (sum, calculation) =>
-      sum + calculation.steps.reduce((stepTotal, step) => stepTotal + step.appliedDaysToAdd, 0),
-    0,
-  )
-  const warningCount =
-    (report?.skippedRows.length ?? 0) +
-    calculations.reduce((sum, calculation) => sum + calculation.skippedCodes.length, 0)
+  const totalAppliedDays = calculation
+    ? calculation.steps.reduce((sum, step) => sum + step.appliedDaysToAdd, 0)
+    : 0
+  const warningCount = (report?.skippedRows.length ?? 0) + (calculation?.skippedCodes.length ?? 0)
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -66,10 +66,12 @@ function App() {
       setReport(parsedReport)
       setSelectedFileName(file.name)
       setDateOverride(parsedReport.currentEndDate ? toDateInputValue(parsedReport.currentEndDate) : '')
+      setSelectedEmployeeId(parsedReport.employees[0]?.employeeId ?? '')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to read the Excel file.'
       setErrorMessage(message)
       setReport(null)
+      setSelectedEmployeeId('')
     } finally {
       setIsLoading(false)
       event.target.value = ''
@@ -117,6 +119,22 @@ function App() {
               />
             </label>
 
+            {report?.employees.length && report.employees.length > 1 ? (
+              <label className="date-field">
+                <span>Employee selector</span>
+                <select
+                  value={activeEmployeeId}
+                  onChange={(event) => setSelectedEmployeeId(event.target.value)}
+                >
+                  {report.employees.map((employee) => (
+                    <option key={employee.employeeId} value={employee.employeeId}>
+                      {employee.employeeId}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
             {isLoading ? <p className="status">Reading workbook...</p> : null}
             {errorMessage ? <p className="status error">{errorMessage}</p> : null}
             {!effectiveStartDate && report ? (
@@ -161,10 +179,10 @@ function App() {
             </div>
 
             <ul className="rule-list">
-              <li>Calendar-day codes extend by consecutive dates.</li>
-              <li>Working-day codes skip weekends and Norwegian public holidays.</li>
-              <li>Codes 470 and 091 are grouped before the vacation-day pass.</li>
-              <li>Code 091 can be read from the Ammefri sheet.</li>
+              <li>Direct rules are applied in chronological order for the selected employee.</li>
+              <li>Summeringsregel 1 and 2 are aggregated once across the employee report.</li>
+              <li>Summeringsregel 3 is aggregated and added after all other non-vacation absence.</li>
+              <li>Only codes marked with Ferieregel contribute to vacation.</li>
             </ul>
           </section>
         </aside>
@@ -182,8 +200,8 @@ function App() {
                 <strong>{selectedFileName || 'None loaded'}</strong>
               </div>
               <div>
-                <span>Records</span>
-                <strong>{totalEmployees}</strong>
+                <span>Selected employee</span>
+                <strong>{selectedEmployee?.employeeId ?? 'None'}</strong>
               </div>
             </div>
           </div>
@@ -205,21 +223,15 @@ function App() {
           ) : null}
 
           <section className="results-stack">
-            {report?.employees.length ? (
-              report.employees.map((employeeReport) => (
-                <EmployeeCard
-                  key={employeeReport.employeeId}
-                  employeeReport={employeeReport}
-                  calculation={calculationByEmployeeId.get(employeeReport.employeeId)}
-                />
-              ))
+            {selectedEmployee ? (
+              <EmployeeCard employeeReport={selectedEmployee} calculation={calculation ?? undefined} />
             ) : (
               <section className="empty-state">
                 <p className="eyebrow">No dataset loaded</p>
                 <h2>Upload a workbook to populate the review workspace.</h2>
                 <p>
-                  The results area will show employee-level calculations, source-code groupings,
-                  and the applied extension steps.
+                  The results area will show a single selected employee calculation, source-code
+                  groupings, and the applied extension steps.
                 </p>
               </section>
             )}

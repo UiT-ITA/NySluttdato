@@ -10,8 +10,12 @@ interface CalculationStepsDetailsProps {
 }
 
 function getStepBasisText(step: EmployeeCalculation['steps'][number]): string {
+  if (step.code === 'VACATION') {
+    return 'Vacation base from all ferieberettiget displacement'
+  }
+
   if (step.groupedSources?.length) {
-    return 'Grouped 470/091 total from the code sections above'
+    return `${step.groupedSources.length} grouped rows from ${step.sourceSheet ?? 'multiple sheets'}`
   }
 
   if (step.sourceRows.length === 1) {
@@ -19,10 +23,22 @@ function getStepBasisText(step: EmployeeCalculation['steps'][number]): string {
   }
 
   if (step.sourceRows.length > 1) {
-    return 'Multiple rows from one code section'
+    return 'Multiple rows from the selected employee report'
   }
 
   return 'Calculated rule'
+}
+
+function getStepTypeText(step: EmployeeCalculation['steps'][number]): string {
+  if (step.code === 'VACATION') {
+    return 'Vacation rule'
+  }
+
+  if (step.code.startsWith('SUM-')) {
+    return 'Summation rule'
+  }
+
+  return step.additionMode === 'working' ? 'Direct working-day rule' : 'Direct calendar-day rule'
 }
 
 export function CalculationStepsDetails({ calculation }: CalculationStepsDetailsProps) {
@@ -39,7 +55,7 @@ export function CalculationStepsDetails({ calculation }: CalculationStepsDetails
           <div className="code-group-title">
             <p className="card-label">Applied calculation</p>
             <h3>Calculation steps</h3>
-            <p>Only these rows directly change the calculated end date.</p>
+            <p>Direct rules, summation rules, and vacation are shown in execution order.</p>
           </div>
 
           <div className="summary-pill-row">
@@ -58,10 +74,12 @@ export function CalculationStepsDetails({ calculation }: CalculationStepsDetails
             <table className="step-table">
               <thead>
                 <tr>
-                  <th>Rule</th>
+                  <th>Step</th>
+                  <th>Type</th>
                   <th>Basis</th>
                   <th>Contribution before rounding</th>
                   <th>Added to end date</th>
+                  <th>Vacation basis</th>
                   <th>End date after step</th>
                 </tr>
               </thead>
@@ -69,9 +87,11 @@ export function CalculationStepsDetails({ calculation }: CalculationStepsDetails
                 {calculationSteps.map((step) => (
                   <tr className="derived-rule-row" key={step.id}>
                     <td>{step.label}</td>
+                    <td>{getStepTypeText(step)}</td>
                     <td>{getStepBasisText(step)}</td>
                     <td>{formatPreciseNumber(step.rawDaysToAdd)} days</td>
                     <td>{formatNumber(step.appliedDaysToAdd)} days</td>
+                    <td>{formatPreciseNumber(step.vacationBaseDays ?? 0)} days</td>
                     <td>{formatDate(step.nextEndDate)}</td>
                   </tr>
                 ))}

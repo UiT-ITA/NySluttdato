@@ -1,6 +1,11 @@
 import { CalculationStepsDetails } from './CalculationStepsDetails'
 import { CodeGroupDetails } from './CodeGroupDetails'
-import { formatDate, formatNumber, type EmployeeCalculation, type ParsedWorkbook } from '../lib/phdCalculator'
+import {
+  formatDate,
+  formatNumber,
+  type EmployeeCalculation,
+  type ParsedWorkbook,
+} from '../lib/phdCalculator'
 
 type EmployeeReport = ParsedWorkbook['employees'][number]
 

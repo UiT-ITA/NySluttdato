@@ -1,0 +1,174 @@
+Regler og typer fravær som gir rett til forskyvelse av sluttdato for stipendiater og postdoktorer
+
+Fraværskode i SAP Regel 1 Regel 2 Regel 3 Regel 6
+
+110
+
+sykemelding Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Ferieregel
+
+170
+
+Delvis sykemelding Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1 Ferieregel
+
+120
+
+Egenmelding Summer antall dager fravær Legg til totalt antall fraværsdager i arbeidsdager Summeringsregel 3 Ferieregel
+
+470
+
+Sykt barn Summer antall dager fravær Legg til totalt antall fraværsdager i arbeidsdager Summeringsregel 3 Ferieregel
+
+091
+
+Ammefri Summer antall timer ammefravær fra separat rapport. Del de summerte timene med 7,5. (Dette gir antall dager) Legg til totalt antall fraværsdager i arbeidsdager Summeringsregel 3 Ferieregel
+
+199
+
+Lønn ut over trygdeperiode Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1 Ferieregel
+
+166
+
+Sykepermisjon med
+
+arbeidsavklaringspenger, med
+
+uførepensjon i Statens
+
+Pensjonskasse Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1
+
+167
+
+Sykepermisjon med
+
+arbeidsavklaringspenger, uten
+
+uførepensjon i Statens
+
+Pensjonskasse Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1
+
+168 Sykepermisjon uten
+
+arbeidsavklaringspenger, med
+
+uførepensjon i Statens
+
+Pensjonskasse Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1
+
+169
+
+Sykepermisjon uten
+
+arbeidsavklaringspenger, uten Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1
+
+
+
+
+uførepensjon i Statens Pensjonskasse
+
+325
+
+Militær repetisjonstjeneste med
+
+full lønn Summer antall dager fravær Legg til totalt antall fraværsdager i arbeidsdager
+
+410
+
+Foreldrepermisjon 100 % lønn Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Ferieregel
+
+415
+
+Foreldrepermisjon 80 % lønn Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Ferieregel
+
+420
+
+Gradert foreldrepermisjon 100
+
+% Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1 Ferieregel
+
+425
+
+Gradert foreldrepermisjon 80 % Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1 Ferieregel
+
+435
+
+Omsorgspermisjon uten lønn
+
+iht. Fellesbestemmelsens § 20 Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 2
+
+440
+
+Omsorg føds 2 uker m/lønn Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Ferieregel
+
+460
+
+Pleiepenger barn Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 2
+
+461
+
+Opplæringspenger Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 2
+
+462
+
+Pleiepenger nærstående Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager
+
+490
+
+Permisjon i henhold til
+
+arbeidsmiljølovens § 10-2 Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager Summeringsregel 1
+
+660
+
+Hovedavtalen § 40 Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager
+
+670
+
+Hovedavtalen §41 Summer antall dager fravær Legg til antall fraværsdager summert i kalenderdager
+
+Globale regler:
+
+- Må følge norsk kalender, inkl. røddager/helligdager som gir rett på fri.
+
+- Fraværsporsent = differansen mellom kolonne F (%arbFør2001) og kolonne G (Deltids-%0007)
+
+Kolonne H og I er til SELPs bruk, og kan ignoreres av verktøyet.
+
+
+Summeringsregel 1:
+
+- Summer antall dager fravær i hele rapporten for alle kolonner som har summeringsregel 1.
+
+- Hvis det summert antall dager blir 0,5 eller mer, rundes det opp til nærmeste hele dag. Er det under 0,5 rundes det ned til nærmeste hele dag
+
+Summeringsregel 2:
+
+- Summer antall dager fravær i hele rapporten for alle kolonner som har summeringsregel 2.
+
+- Hvis totalt antall dager summert innehar desimaltegn, rund opp til nærmeste hele arbeidsdag.
+
+
+Summeringsregel 3:
+
+- Summer antall dager fravær i hele rapporten for alle kolonner som har summeringsregel 3.
+
+- Hvis totalt antall dager summert innehar desimaltegn, rund opp til nærmeste hele arbeidsdag.
+
+- Legg summert antall dager til sluttdatoen når alt annet fravær, bortsett fra ferieregel, er lagt til.
+
+
+
+Ferieregel: kalkulering opptjent ferie
+
+- Summer opp antall dager forskyvelse i kodene som innehar ferieregelen
+
+a. Antall dager fra summeringsregel 3 skal være totalt antall kalenderdager, ikke faktisk arbeidsdager fraværende.
+
+F.eks. 3 egenmeldinger, men 5 dager forskyvelse grunnet helg. Da skal 5 dager tas med i summeringen.
+
+- Antall dager summert / 30 * 2,916 = antall dager ferie.
+
+- Hvis feriedager ender med 0,5 eller mer, rund opp til nærmeste hele dag
+
+- Legg feriedager til sluttdatoen kalkulert i kalenderdager.
+
+Feriedager må legges til til slutt, og må ikke inngå i noen andre summeringer.

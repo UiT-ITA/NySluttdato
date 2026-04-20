@@ -1,10 +1,12 @@
 import {
+  SUMMATION_RULES,
   VACATION_RULE,
   getAbsenceRule,
   type AbsenceCodeRule,
   type AdditionMode,
   type CountingBasis,
   type RoundingMode,
+  type SummationRule,
 } from './rules'
 
 type SpreadsheetCell = string | number | boolean | Date | typeof Date | null
@@ -61,6 +63,7 @@ export interface CalculationStep {
   appliedDaysToAdd: number
   previousEndDate: Date
   nextEndDate: Date
+  vacationBaseDays?: number
   notes: string[]
 }
 
@@ -77,11 +80,28 @@ export interface EmployeeCalculation {
 
 export interface RowCalculationPreview {
   ruleLabel: string
-  isGroupedRule: boolean
+  summationRule: SummationRule | null
+  additionMode: AdditionMode
   baseDays: number
   absenceFraction: number
   rawDaysToAdd: number
   roundedDaysToAdd: number
+  vacationEligible: boolean
+}
+
+interface RowContribution {
+  row: ParsedAbsenceRow
+  rule: AbsenceCodeRule
+  baseDays: number
+  absenceFraction: number
+  rawDaysToAdd: number
+}
+
+interface SummationAggregateResult {
+  rawDays: number
+  appliedDays: number
+  vacationBaseDays: number
+  nextEndDate: Date
 }
 
 export function parseWorkbook({
@@ -195,8 +215,9 @@ export function calculateEmployeeResult(
   let currentEndDate = atUtcMidnight(initialEndDate)
   let vacationBaseDays = 0
   const steps: CalculationStep[] = []
-  const groupedRows = new Map<string, { label: string; rows: ParsedAbsenceRow[] }>()
   const skippedCodes = new Set<string>()
+  const directRows: RowContribution[] = []
+  const summationRows = new Map<SummationRule, RowContribution[]>()
 
   for (const row of rows) {
     const rule = getAbsenceRule(row.code)
@@ -206,36 +227,46 @@ export function calculateEmployeeResult(
       continue
     }
 
-    if (rule.additionMode === 'grouped-working') {
-      const groupKey = rule.aggregationGroup ?? row.code
-      const existingGroup = groupedRows.get(groupKey)
-      if (existingGroup) {
-        existingGroup.rows.push(row)
-      } else {
-        groupedRows.set(groupKey, {
-          label: rule.aggregationLabel ?? rule.label,
-          rows: [row],
-        })
-      }
-      if (rule.vacationEligible) {
-        vacationBaseDays += getRawDaysToAdd(row, rule.countingBasis, rule.additionMode)
-      }
+    const contribution = createRowContribution(row, rule)
+
+    if (rule.summationRule) {
+      const existingRows = summationRows.get(rule.summationRule) ?? []
+      existingRows.push(contribution)
+      summationRows.set(rule.summationRule, existingRows)
       continue
     }
 
-    const step = createRowStep(row, rule, currentEndDate)
+    directRows.push(contribution)
+  }
+
+  for (const contribution of directRows) {
+    const step = createDirectStep(contribution, currentEndDate)
     currentEndDate = step.nextEndDate
     steps.push(step)
 
-    if (rule.vacationEligible) {
-      vacationBaseDays += step.rawDaysToAdd
+    if (contribution.rule.vacationEligible) {
+      vacationBaseDays += step.appliedDaysToAdd
     }
   }
 
-  for (const group of groupedRows.values()) {
-    const groupedStep = createGroupedWorkingStep(group.label, group.rows, currentEndDate)
-    currentEndDate = groupedStep.nextEndDate
-    steps.push(groupedStep)
+  for (const ruleNumber of [1, 2] as const) {
+    const aggregateRows = summationRows.get(ruleNumber)
+    if (!aggregateRows?.length) {
+      continue
+    }
+
+    const step = createSummationStep(ruleNumber, aggregateRows, currentEndDate)
+    currentEndDate = step.nextEndDate
+    steps.push(step)
+    vacationBaseDays += step.vacationBaseDays ?? 0
+  }
+
+  const ruleThreeRows = summationRows.get(3)
+  if (ruleThreeRows?.length) {
+    const step = createSummationStep(3, ruleThreeRows, currentEndDate)
+    currentEndDate = step.nextEndDate
+    steps.push(step)
+    vacationBaseDays += step.vacationBaseDays ?? 0
   }
 
   const vacationRawDays = vacationBaseDays / VACATION_RULE.divisor * VACATION_RULE.multiplier
@@ -245,7 +276,7 @@ export function calculateEmployeeResult(
     const nextEndDate = addCalendarDays(currentEndDate, vacationDays)
     steps.push({
       id: `${employeeId}-vacation`,
-      label: 'Vacation day rule',
+      label: 'Ferieregel',
       code: 'VACATION',
       sourceRows: [],
       additionMode: 'vacation',
@@ -255,6 +286,7 @@ export function calculateEmployeeResult(
       appliedDaysToAdd: vacationDays,
       previousEndDate: currentEndDate,
       nextEndDate,
+      vacationBaseDays,
       notes: VACATION_RULE.verificationNotes,
     })
     currentEndDate = nextEndDate
@@ -321,110 +353,146 @@ export function previewRowCalculation(row: ParsedAbsenceRow): RowCalculationPrev
     return null
   }
 
-  const baseDays = getBaseDays(row, rule.countingBasis, rule.additionMode)
-  const absenceFraction =
-    rule.countingBasis === 'hours-divided-by-7.5' ? 1 : getAbsenceFraction(row)
-  const rawDaysToAdd = baseDays * absenceFraction
-  const { appliedDaysToAdd } = normalizeDaysToAdd(rawDaysToAdd, rule.roundingMode)
+  const contribution = createRowContribution(row, rule)
+  const roundingMode = rule.summationRule
+    ? SUMMATION_RULES[rule.summationRule].roundingMode
+    : 'none'
+  const { appliedDaysToAdd } = normalizeDaysToAdd(contribution.rawDaysToAdd, roundingMode)
 
   return {
     ruleLabel: rule.label,
-    isGroupedRule: rule.additionMode === 'grouped-working',
-    baseDays,
-    absenceFraction,
-    rawDaysToAdd,
+    summationRule: rule.summationRule,
+    additionMode: rule.additionMode,
+    baseDays: contribution.baseDays,
+    absenceFraction: contribution.absenceFraction,
+    rawDaysToAdd: contribution.rawDaysToAdd,
     roundedDaysToAdd: appliedDaysToAdd,
+    vacationEligible: rule.vacationEligible,
   }
 }
 
-function createRowStep(
-  row: ParsedAbsenceRow,
-  rule: AbsenceCodeRule,
-  previousEndDate: Date,
-): CalculationStep {
+function createRowContribution(row: ParsedAbsenceRow, rule: AbsenceCodeRule): RowContribution {
   const baseDays = getBaseDays(row, rule.countingBasis, rule.additionMode)
   const absenceFraction =
-    rule.countingBasis === 'hours-divided-by-7.5' ? 1 : getAbsenceFraction(row)
-  const rawDaysToAdd = baseDays * absenceFraction
-  const { appliedDaysToAdd, notes } = normalizeDaysToAdd(rawDaysToAdd, rule.roundingMode)
-  const nextEndDate =
-    rule.additionMode === 'working'
-      ? addWorkingDays(previousEndDate, appliedDaysToAdd)
-      : addCalendarDays(previousEndDate, appliedDaysToAdd)
+    rule.countingBasis === 'hours-divided-by-7.5' || rule.summationRule == null
+      ? 1
+      : getAbsenceFraction(row)
 
   return {
-    id: `${row.employeeId}-${row.sourceRowNumber}`,
-    label: rule.label,
-    code: row.code,
-    sourceRows: [row.sourceRowNumber],
-    sourceSheet: row.sourceSheet,
-    startDate: row.startDate,
-    endDate: row.endDate,
-    workPercent: row.workPercent,
-    partTimePercent: row.partTimePercent,
-    extraPercent: row.extraPercent,
-    hours: row.hours,
-    additionMode: rule.additionMode,
+    row,
+    rule,
     baseDays,
     absenceFraction,
-    rawDaysToAdd,
-    appliedDaysToAdd,
-    previousEndDate,
-    nextEndDate,
-    notes: [...rule.verificationNotes, ...notes],
+    rawDaysToAdd: baseDays * absenceFraction,
   }
 }
 
-function createGroupedWorkingStep(
-  label: string,
-  rows: ParsedAbsenceRow[],
-  previousEndDate: Date,
-): CalculationStep {
-  const firstRule = getAbsenceRule(rows[0].code)
-  const rawDaysToAdd = rows.reduce(
-    (sum, row) =>
-      sum +
-      getRawDaysToAdd(
-        row,
-        getAbsenceRule(row.code)?.countingBasis ?? 'days',
-        'grouped-working',
-      ),
-    0,
-  )
-  const { appliedDaysToAdd, notes } = normalizeDaysToAdd(rawDaysToAdd, 'any-up')
-  const nextEndDate = addWorkingDays(previousEndDate, appliedDaysToAdd)
+function createDirectStep(contribution: RowContribution, previousEndDate: Date): CalculationStep {
+  const nextEndDate =
+    contribution.rule.additionMode === 'working'
+      ? addWorkingDays(previousEndDate, contribution.rawDaysToAdd)
+      : addCalendarDays(previousEndDate, contribution.rawDaysToAdd)
 
   return {
-    id: `${rows[0].employeeId}-grouped-working`,
-    label,
-    code: '470/091',
-    sourceRows: rows.map((row) => row.sourceRowNumber),
-    sourceSheet: 'Leave + Ammefri',
-    startDate: rows[0]?.startDate,
-    endDate: rows[rows.length - 1]?.endDate,
-    groupedSources: rows,
-    additionMode: 'grouped-working',
+    id: `${contribution.row.employeeId}-${contribution.row.sourceSheet}-${contribution.row.sourceRowNumber}`,
+    label: contribution.rule.label,
+    code: contribution.row.code,
+    sourceRows: [contribution.row.sourceRowNumber],
+    sourceSheet: contribution.row.sourceSheet,
+    startDate: contribution.row.startDate,
+    endDate: contribution.row.endDate,
+    workPercent: contribution.row.workPercent,
+    partTimePercent: contribution.row.partTimePercent,
+    extraPercent: contribution.row.extraPercent,
+    hours: contribution.row.hours,
+    additionMode: contribution.rule.additionMode,
+    baseDays: contribution.baseDays,
+    absenceFraction: contribution.absenceFraction,
+    rawDaysToAdd: contribution.rawDaysToAdd,
+    appliedDaysToAdd: contribution.rawDaysToAdd,
+    previousEndDate,
+    nextEndDate,
+    vacationBaseDays: contribution.rule.vacationEligible ? contribution.rawDaysToAdd : 0,
+    notes: contribution.rule.verificationNotes,
+  }
+}
+
+function createSummationStep(
+  ruleNumber: SummationRule,
+  rows: RowContribution[],
+  previousEndDate: Date,
+): CalculationStep {
+  const summationRule = SUMMATION_RULES[ruleNumber]
+  const rawDaysToAdd = rows.reduce((sum, contribution) => sum + contribution.rawDaysToAdd, 0)
+  const { appliedDaysToAdd, notes } = normalizeDaysToAdd(rawDaysToAdd, summationRule.roundingMode)
+  const nextEndDate =
+    summationRule.additionMode === 'working'
+      ? addWorkingDays(previousEndDate, appliedDaysToAdd)
+      : addCalendarDays(previousEndDate, appliedDaysToAdd)
+  const vacationBaseDays = calculateVacationBaseForSummationRule(
+    ruleNumber,
+    rows,
+    previousEndDate,
+    appliedDaysToAdd,
+    nextEndDate,
+  )
+
+  return {
+    id: `${rows[0].row.employeeId}-summation-${ruleNumber}`,
+    label: summationRule.label,
+    code: `SUM-${ruleNumber}`,
+    sourceRows: rows.map((contribution) => contribution.row.sourceRowNumber),
+    sourceSheet: getCombinedSourceSheet(rows.map((contribution) => contribution.row)),
+    startDate: rows[0]?.row.startDate,
+    endDate: rows[rows.length - 1]?.row.endDate,
+    groupedSources: rows.map((contribution) => contribution.row),
+    additionMode: summationRule.additionMode,
     baseDays: rawDaysToAdd,
     absenceFraction: 1,
     rawDaysToAdd,
     appliedDaysToAdd,
     previousEndDate,
     nextEndDate,
-    notes: [...(firstRule?.verificationNotes ?? []), ...notes],
+    vacationBaseDays,
+    notes: [...summationRule.verificationNotes, ...notes],
   }
 }
 
-function getRawDaysToAdd(
-  row: ParsedAbsenceRow,
-  countingBasis: CountingBasis,
-  mode: AdditionMode,
+function calculateVacationBaseForSummationRule(
+  ruleNumber: SummationRule,
+  rows: RowContribution[],
+  previousEndDate: Date,
+  appliedDaysToAdd: number,
+  nextEndDate: Date,
 ): number {
-  const baseDays = getBaseDays(row, countingBasis, mode)
-  if (countingBasis === 'hours-divided-by-7.5') {
-    return baseDays
+  const hasVacationEligibleRows = rows.some((contribution) => contribution.rule.vacationEligible)
+  if (!hasVacationEligibleRows) {
+    return 0
   }
 
-  return baseDays * getAbsenceFraction(row)
+  if (ruleNumber === 3) {
+    return countCalendarDaysExclusive(previousEndDate, nextEndDate)
+  }
+
+  return rows
+    .filter((contribution) => contribution.rule.vacationEligible)
+    .reduce((sum, contribution) => sum + getVacationBaseForContribution(contribution, appliedDaysToAdd), 0)
+}
+
+function getVacationBaseForContribution(
+  contribution: RowContribution,
+  appliedDaysToAdd: number,
+): number {
+  if (!contribution.rule.vacationEligible) {
+    return 0
+  }
+
+  return contribution.rule.summationRule == null ? contribution.rawDaysToAdd : appliedDaysToAdd
+}
+
+function getCombinedSourceSheet(rows: ParsedAbsenceRow[]): string {
+  const uniqueSheets = Array.from(new Set(rows.map((row) => row.sourceSheet)))
+  return uniqueSheets.join(' + ')
 }
 
 function getBaseDays(
@@ -442,13 +510,11 @@ function getBaseDays(
 }
 
 function getAbsenceFraction(row: ParsedAbsenceRow): number {
-  const workedPercent = row.workPercent ?? 0
-  const leaveCeiling = row.extraPercent ?? row.partTimePercent ?? 100
-  const denominator = row.partTimePercent ?? leaveCeiling ?? 100
-  const calculatedPercent = Math.max(leaveCeiling - workedPercent, 0)
+  const workBefore = row.workPercent
+  const partTimePercent = row.partTimePercent
 
-  if (denominator > 0 && calculatedPercent > 0) {
-    return clamp(calculatedPercent / denominator, 0, 1)
+  if (typeof workBefore === 'number' && typeof partTimePercent === 'number') {
+    return clamp(Math.abs(workBefore - partTimePercent) / 100, 0, 1)
   }
 
   return 1
@@ -469,7 +535,7 @@ function normalizeDaysToAdd(
   }
 
   if (roundingMode === 'any-up') {
-    notes.push('Rounded up because this rule uses full working days when a decimal remains.')
+    notes.push('Rounded up because this rule uses full days when a decimal remains.')
     return {
       appliedDaysToAdd: Math.ceil(roundedToThreeDecimals),
       notes,
@@ -502,6 +568,13 @@ function countCalendarDaysInclusive(startDate: Date, endDate: Date): number {
   const end = atUtcMidnight(endDate)
   const difference = end.getTime() - start.getTime()
   return Math.floor(difference / DAY_IN_MS) + 1
+}
+
+function countCalendarDaysExclusive(startDate: Date, endDate: Date): number {
+  const start = atUtcMidnight(startDate)
+  const end = atUtcMidnight(endDate)
+  const difference = end.getTime() - start.getTime()
+  return Math.max(0, Math.floor(difference / DAY_IN_MS))
 }
 
 function countWorkingDaysInclusive(startDate: Date, endDate: Date): number {
