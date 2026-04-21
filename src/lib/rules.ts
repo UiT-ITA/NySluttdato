@@ -377,7 +377,7 @@ export const VACATION_RULE: VacationRuleDefinition = {
     'Summer opp antall dager forskyvelse i kodene som innehar ferieregelen.',
     'For summeringsregel 3 skal feriegrunnlaget bruke totale kalenderdager forskyvelse, ikke bare faktiske arbeidsdager fraværende.',
     'Antall dager summert / 30 * 2,916 = antall dager ferie.',
-    'Hvis feriedager ender med 0,5 eller mer, rund opp til nærmeste hele dag.',
+      'Rund til nærmeste hele dag: 0,5 og oppover rundes opp, mindre enn 0,5 rundes ned.',
     'Legg feriedager til sluttdatoen kalkulert i kalenderdager, helt til slutt.',
   ],
 }

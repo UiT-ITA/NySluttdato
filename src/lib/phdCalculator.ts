@@ -624,7 +624,12 @@ function normalizeDaysToAdd(
 }
 
 function roundVacationDays(value: number): number {
-  return Number.isInteger(value) ? value : Math.ceil(value)
+  if (Number.isInteger(value)) {
+    return value
+  }
+
+  // Half-up: values with a fractional part >= 0.5 round up, otherwise down.
+  return Math.round(value)
 }
 
 function countCalendarDaysInclusive(startDate: Date, endDate: Date): number {

@@ -315,8 +315,8 @@ function App() {
                 <li className="rule-item">
                   <h4>Ferieregel</h4>
                   <p>
-                    Beregnes som <code>dager / 30 × 2,916</code>. Desimaler rundes opp.
-                    Legges til helt til slutt i kalenderdager.
+                    Beregnes som <code>dager / 30 × 2,916</code>. Desimaler rundes til nærmeste hele dag
+                    (0,5 og over rundes opp, under 0,5 rundes ned). Legges til helt til slutt i kalenderdager.
                   </p>
                   <div className="rule-codes">
                     {['091', '110', '120', '170', '199', '410', '415', '420', '425', '440', '470'].map((c) => (
