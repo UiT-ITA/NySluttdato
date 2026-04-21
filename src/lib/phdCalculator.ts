@@ -97,13 +97,6 @@ interface RowContribution {
   rawDaysToAdd: number
 }
 
-interface SummationAggregateResult {
-  rawDays: number
-  appliedDays: number
-  vacationBaseDays: number
-  nextEndDate: Date
-}
-
 export function parseWorkbook({
   leaveRows,
   breastfeedingRows,
@@ -433,7 +426,6 @@ function createSummationStep(
     ruleNumber,
     rows,
     previousEndDate,
-    appliedDaysToAdd,
     nextEndDate,
   )
 
@@ -462,7 +454,6 @@ function calculateVacationBaseForSummationRule(
   ruleNumber: SummationRule,
   rows: RowContribution[],
   previousEndDate: Date,
-  appliedDaysToAdd: number,
   nextEndDate: Date,
 ): number {
   const hasVacationEligibleRows = rows.some((contribution) => contribution.rule.vacationEligible)
@@ -476,18 +467,15 @@ function calculateVacationBaseForSummationRule(
 
   return rows
     .filter((contribution) => contribution.rule.vacationEligible)
-    .reduce((sum, contribution) => sum + getVacationBaseForContribution(contribution, appliedDaysToAdd), 0)
+    .reduce((sum, contribution) => sum + getVacationBaseForContribution(contribution), 0)
 }
 
-function getVacationBaseForContribution(
-  contribution: RowContribution,
-  appliedDaysToAdd: number,
-): number {
+function getVacationBaseForContribution(contribution: RowContribution): number {
   if (!contribution.rule.vacationEligible) {
     return 0
   }
 
-  return contribution.rule.summationRule == null ? contribution.rawDaysToAdd : appliedDaysToAdd
+  return contribution.rawDaysToAdd
 }
 
 function getCombinedSourceSheet(rows: ParsedAbsenceRow[]): string {
