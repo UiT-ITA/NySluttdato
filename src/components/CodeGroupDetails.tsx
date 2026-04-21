@@ -1,4 +1,9 @@
-import { getAbsenceRule, type CountingBasis } from '../lib/rules'
+import { getAbsenceRule } from '../lib/rules'
+import {
+  getCodeDisplayConfig,
+  getCodeDisplayType,
+  getCodeGroupColumnHeader,
+} from '../lib/codeGroupDisplay'
 import {
   formatDate,
   formatNumber,
@@ -7,119 +12,9 @@ import {
   type ParsedAbsenceRow,
 } from '../lib/phdCalculator'
 
-type CodeDisplayType =
-  | 'direct-calendar'
-  | 'direct-working'
-  | 'summation-rule-1'
-  | 'summation-rule-2'
-  | 'summation-rule-3-days'
-  | 'summation-rule-3-hours'
-
 interface CodeGroupDetailsProps {
   code: string
   rows: ParsedAbsenceRow[]
-}
-
-interface DisplayConfig {
-  headerTotalLabel: string
-  groupedByLabel: string | null
-  tableColumns: Array<
-    | 'row'
-    | 'from'
-    | 'to'
-    | 'workPercent'
-    | 'partTimePercent'
-    | 'baseDays'
-    | 'absenceFraction'
-    | 'calculatedDays'
-    | 'hours'
-  >
-}
-
-function getDisplayType(code: string, countingBasis: CountingBasis): CodeDisplayType {
-  const rule = getAbsenceRule(code)
-
-  if (!rule) {
-    return 'direct-calendar'
-  }
-
-  if (rule.summationRule == null) {
-    return rule.additionMode === 'working' ? 'direct-working' : 'direct-calendar'
-  }
-
-  if (rule.summationRule === 1) {
-    return 'summation-rule-1'
-  }
-
-  if (rule.summationRule === 2) {
-    return 'summation-rule-2'
-  }
-
-  return countingBasis === 'hours-divided-by-7.5' ? 'summation-rule-3-hours' : 'summation-rule-3-days'
-}
-
-function getDisplayConfig(displayType: CodeDisplayType): DisplayConfig {
-  switch (displayType) {
-    case 'direct-calendar':
-      return {
-        headerTotalLabel: 'Kalenderdager',
-        groupedByLabel: null,
-        tableColumns: ['row', 'from', 'to', 'baseDays'],
-      }
-    case 'direct-working':
-      return {
-        headerTotalLabel: 'Arbeidsdager',
-        groupedByLabel: null,
-        tableColumns: ['row', 'from', 'to', 'baseDays'],
-      }
-    case 'summation-rule-1':
-      return {
-        headerTotalLabel: 'Delsum',
-        groupedByLabel: 'Sumregel 1',
-        tableColumns: ['row', 'from', 'to', 'workPercent', 'partTimePercent', 'baseDays', 'absenceFraction', 'calculatedDays'],
-      }
-    case 'summation-rule-2':
-      return {
-        headerTotalLabel: 'Delsum',
-        groupedByLabel: 'Sumregel 2',
-        tableColumns: ['row', 'from', 'to', 'baseDays', 'calculatedDays'],
-      }
-    case 'summation-rule-3-days':
-      return {
-        headerTotalLabel: 'Delsum',
-        groupedByLabel: 'Sumregel 3',
-        tableColumns: ['row', 'from', 'to', 'baseDays', 'calculatedDays'],
-      }
-    case 'summation-rule-3-hours':
-      return {
-        headerTotalLabel: 'Delsum',
-        groupedByLabel: 'Sumregel 3',
-        tableColumns: ['row', 'from', 'to', 'hours', 'calculatedDays'],
-      }
-  }
-}
-
-function getColumnHeader(column: DisplayConfig['tableColumns'][number]): string {
-  switch (column) {
-    case 'row':
-      return 'Rad'
-    case 'from':
-      return 'Fra'
-    case 'to':
-      return 'Til'
-    case 'workPercent':
-      return '% før'
-    case 'partTimePercent':
-      return 'Deltid %'
-    case 'baseDays':
-      return 'Grunndager'
-    case 'absenceFraction':
-      return 'Brøk'
-    case 'calculatedDays':
-      return 'Beregnet'
-    case 'hours':
-      return 'Timer'
-  }
 }
 
 export function CodeGroupDetails({ code, rows }: CodeGroupDetailsProps) {
@@ -129,8 +24,8 @@ export function CodeGroupDetails({ code, rows }: CodeGroupDetailsProps) {
   }))
   const firstPreview = rowDetails[0]?.preview
   const rule = getAbsenceRule(code)
-  const displayType = getDisplayType(code, rule?.countingBasis ?? 'days')
-  const displayConfig = getDisplayConfig(displayType)
+  const displayType = getCodeDisplayType(code, rule?.countingBasis ?? 'days')
+  const displayConfig = getCodeDisplayConfig(displayType)
   const totalContribution = rowDetails.reduce(
     (sum, detail) => sum + (detail.preview?.rawDaysToAdd ?? 0),
     0,
@@ -176,7 +71,7 @@ export function CodeGroupDetails({ code, rows }: CodeGroupDetailsProps) {
             <thead>
               <tr>
                 {displayConfig.tableColumns.map((column) => (
-                  <th key={column}>{getColumnHeader(column)}</th>
+                  <th key={column}>{getCodeGroupColumnHeader(column)}</th>
                 ))}
               </tr>
             </thead>

@@ -11,6 +11,7 @@ import {
   type EmployeeCalculation,
   type ParsedWorkbook,
 } from './lib/phdCalculator'
+import { generateEmployeePdfReport } from './lib/pdfReport'
 
 function App() {
   const [report, setReport] = useState<ParsedWorkbook | null>(null)
@@ -76,6 +77,21 @@ function App() {
       event.target.value = ''
     }
   }
+
+  function handleDownloadReport() {
+    if (!selectedEmployee || !calculation) {
+      return
+    }
+
+    generateEmployeePdfReport({
+      employeeReport: selectedEmployee,
+      calculation,
+      sourceFileName: selectedFileName || undefined,
+      skippedRows: report?.skippedRows,
+    })
+  }
+
+  const canDownloadReport = Boolean(selectedEmployee && calculation)
 
   return (
     <div className="app">
@@ -161,6 +177,23 @@ function App() {
               </div>
             </>
           ) : null}
+
+          <div className="toolbar-divider" />
+
+          <button
+            type="button"
+            className="toolbar-action"
+            onClick={handleDownloadReport}
+            disabled={!canDownloadReport}
+            title={canDownloadReport ? 'Last ned PDF-rapport' : 'Last opp fil og velg sluttdato først'}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Last ned PDF</span>
+          </button>
         </div>
       </header>
 

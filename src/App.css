@@ -150,6 +150,45 @@
   color: var(--warning);
 }
 
+.toolbar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  background: var(--accent-glow);
+  border: 1px solid rgba(91, 156, 245, 0.28);
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.toolbar-action:hover:not(:disabled) {
+  background: rgba(91, 156, 245, 0.16);
+  border-color: rgba(91, 156, 245, 0.5);
+  color: var(--accent-strong);
+}
+
+.toolbar-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.toolbar-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.toolbar-action svg {
+  flex-shrink: 0;
+}
+
 /* ═══════════════════════════════════════════
    STATUS BAR
    ═══════════════════════════════════════════ */
