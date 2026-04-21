@@ -51,7 +51,7 @@
   --radius-lg: 8px;
 
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--text-1);
   background: var(--bg-0);
@@ -114,7 +114,7 @@ select {
   padding: 5px 10px;
   color: var(--text-0);
   font-size: 0.8125rem;
-  height: 30px;
+  height: 34px;
   font-family: var(--font-mono);
   transition: border-color 0.15s;
 }
