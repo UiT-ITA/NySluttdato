@@ -337,7 +337,7 @@ export const SUMMATION_RULES: Record<
   }
 > = {
   1: {
-    label: 'Summeringsregel 1',
+    label: 'Summering 1',
     additionMode: 'calendar',
     roundingMode: 'nearest-whole-half-up',
     appliesAfterDirectSteps: false,
@@ -347,7 +347,7 @@ export const SUMMATION_RULES: Record<
     ],
   },
   2: {
-    label: 'Summeringsregel 2',
+    label: 'Summering 2',
     additionMode: 'calendar',
     roundingMode: 'any-up',
     appliesAfterDirectSteps: false,
@@ -357,7 +357,7 @@ export const SUMMATION_RULES: Record<
     ],
   },
   3: {
-    label: 'Summeringsregel 3',
+    label: 'Summering 3',
     additionMode: 'working',
     roundingMode: 'any-up',
     appliesAfterDirectSteps: true,

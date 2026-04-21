@@ -134,19 +134,19 @@ export const RULE_CATEGORY_DESCRIPTIONS: RuleCategoryDescription[] = [
     codes: ['325'],
   },
   {
-    heading: 'Summeringsregel 1',
+    heading: 'Summering 1',
     description:
       'Alle rader summeres. Summen legges til i kalenderdager. Desimaldel lik eller over 0,5 rundes opp, ellers ned.',
     codes: ['166', '167', '168', '169', '170', '199', '420', '425', '490'],
   },
   {
-    heading: 'Summeringsregel 2',
+    heading: 'Summering 2',
     description:
       'Alle rader summeres. Summen legges til i kalenderdager. Desimaler rundes alltid opp.',
     codes: ['435', '460', '461'],
   },
   {
-    heading: 'Summeringsregel 3',
+    heading: 'Summering 3',
     description:
       'Alle rader summeres. Desimaler rundes opp til nærmeste hele arbeidsdag. Legges til etter alt annet fravær (unntatt ferie).',
     codes: ['091', '120', '470'],

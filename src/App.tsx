@@ -277,7 +277,7 @@ function App() {
                   </div>
                 </li>
                 <li className="rule-item">
-                  <h4>Summeringsregel 1</h4>
+                  <h4>Summering 1</h4>
                   <p>
                     Alle rader summeres. Summen legges til i kalenderdager.
                     Desimaldel ≥ 0,5 rundes opp, ellers ned.
@@ -289,7 +289,7 @@ function App() {
                   </div>
                 </li>
                 <li className="rule-item">
-                  <h4>Summeringsregel 2</h4>
+                  <h4>Summering 2</h4>
                   <p>
                     Alle rader summeres. Summen legges til i kalenderdager.
                     Desimaler rundes alltid opp.
@@ -301,7 +301,7 @@ function App() {
                   </div>
                 </li>
                 <li className="rule-item">
-                  <h4>Summeringsregel 3</h4>
+                  <h4>Summering 3</h4>
                   <p>
                     Alle rader summeres. Desimaler rundes opp til nærmeste hele arbeidsdag.
                     Legges til etter alt annet fravær (unntatt ferie).
@@ -336,27 +336,27 @@ function App() {
             <div className="rules-content">
               <ul className="rule-list">
                 {[
-                  { code: '091', name: 'Ammefri', desc: 'Timer hentes fra eget ammefriark, deles på 7,5 for å omregnes til dager. Summeringsregel 3 + ferieregel.' },
+                  { code: '091', name: 'Ammefri', desc: 'Timer hentes fra eget ammefriark, deles på 7,5 for å omregnes til dager. Summering 3 + ferieregel.' },
                   { code: '110', name: 'Sykemelding', desc: 'Direkte i kalenderdager. Ferieregel.' },
-                  { code: '120', name: 'Egenmelding', desc: 'Summeres i arbeidsdager. Summeringsregel 3 + ferieregel.' },
-                  { code: '166', name: 'Sykepermisjon m/AAP, m/uførepensjon SPK', desc: 'Summeringsregel 1.' },
-                  { code: '167', name: 'Sykepermisjon m/AAP, u/uførepensjon SPK', desc: 'Summeringsregel 1.' },
-                  { code: '168', name: 'Sykepermisjon u/AAP, m/uførepensjon SPK', desc: 'Summeringsregel 1.' },
-                  { code: '169', name: 'Sykepermisjon u/AAP, u/uførepensjon SPK', desc: 'Summeringsregel 1.' },
-                  { code: '170', name: 'Delvis sykemelding', desc: 'Summeringsregel 1 + ferieregel.' },
-                  { code: '199', name: 'Lønn ut over trygdeperiode', desc: 'Summeringsregel 1 + ferieregel.' },
+                  { code: '120', name: 'Egenmelding', desc: 'Summeres i arbeidsdager. Summering 3 + ferieregel.' },
+                  { code: '166', name: 'Sykepermisjon m/AAP, m/uførepensjon SPK', desc: 'Summering 1.' },
+                  { code: '167', name: 'Sykepermisjon m/AAP, u/uførepensjon SPK', desc: 'Summering 1.' },
+                  { code: '168', name: 'Sykepermisjon u/AAP, m/uførepensjon SPK', desc: 'Summering 1.' },
+                  { code: '169', name: 'Sykepermisjon u/AAP, u/uførepensjon SPK', desc: 'Summering 1.' },
+                  { code: '170', name: 'Delvis sykemelding', desc: 'Summering 1 + ferieregel.' },
+                  { code: '199', name: 'Lønn ut over trygdeperiode', desc: 'Summering 1 + ferieregel.' },
                   { code: '325', name: 'Militær repetisjonstjeneste', desc: 'Direkte i arbeidsdager.' },
                   { code: '410', name: 'Foreldrepermisjon 100 %', desc: 'Direkte i kalenderdager. Ferieregel.' },
                   { code: '415', name: 'Foreldrepermisjon 80 %', desc: 'Direkte i kalenderdager. Ferieregel.' },
-                  { code: '420', name: 'Gradert foreldreperm 100 %', desc: 'Summeringsregel 1 + ferieregel.' },
-                  { code: '425', name: 'Gradert foreldreperm 80 %', desc: 'Summeringsregel 1 + ferieregel.' },
-                  { code: '435', name: 'Omsorgspermisjon u/lønn', desc: 'Summeringsregel 2.' },
+                  { code: '420', name: 'Gradert foreldreperm 100 %', desc: 'Summering 1 + ferieregel.' },
+                  { code: '425', name: 'Gradert foreldreperm 80 %', desc: 'Summering 1 + ferieregel.' },
+                  { code: '435', name: 'Omsorgspermisjon u/lønn', desc: 'Summering 2.' },
                   { code: '440', name: 'Omsorg fødsel 2 uker m/lønn', desc: 'Direkte i kalenderdager. Ferieregel.' },
-                  { code: '460', name: 'Pleiepenger barn', desc: 'Summeringsregel 2.' },
-                  { code: '461', name: 'Opplæringspenger', desc: 'Summeringsregel 2.' },
+                  { code: '460', name: 'Pleiepenger barn', desc: 'Summering 2.' },
+                  { code: '461', name: 'Opplæringspenger', desc: 'Summering 2.' },
                   { code: '462', name: 'Pleiepenger nærstående', desc: 'Direkte i kalenderdager.' },
-                  { code: '470', name: 'Sykt barn', desc: 'Summeringsregel 3 + ferieregel.' },
-                  { code: '490', name: 'Permisjon iht. AML § 10-2', desc: 'Summeringsregel 1.' },
+                  { code: '470', name: 'Sykt barn', desc: 'Summering 3 + ferieregel.' },
+                  { code: '490', name: 'Permisjon iht. AML § 10-2', desc: 'Summering 1.' },
                   { code: '660', name: 'Hovedavtalen § 40', desc: 'Direkte i kalenderdager.' },
                   { code: '670', name: 'Hovedavtalen § 41', desc: 'Direkte i kalenderdager.' },
                 ].map((item) => (

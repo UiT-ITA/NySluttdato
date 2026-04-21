@@ -6,7 +6,6 @@ import {
   getCodeDisplayConfig,
   getCodeDisplayType,
   getCodeGroupColumnHeader,
-  RULE_CATEGORY_DESCRIPTIONS,
   type CodeGroupColumn,
 } from './codeGroupDisplay'
 import {
@@ -498,42 +497,6 @@ function drawCalculationSteps(builder: PdfBuilder, calculation: EmployeeCalculat
   builder.cursorY = (lastAutoTable?.finalY ?? builder.cursorY) + 6
 }
 
-function drawRulesAppendix(builder: PdfBuilder): void {
-  drawSectionHeading(builder, 'Regelkategorier (kort oppsummering)')
-
-  const { doc } = builder
-  for (const category of RULE_CATEGORY_DESCRIPTIONS) {
-    ensureSpace(builder, 14)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(...COLOR_TEXT)
-    doc.text(category.heading, PAGE_MARGIN_X, builder.cursorY)
-    builder.cursorY += 4.5
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(...COLOR_MUTED)
-    const lines = doc.splitTextToSize(category.description, builder.contentWidth) as string[]
-    const blockHeight = lines.length * 4
-    ensureSpace(builder, blockHeight + 2)
-    doc.text(lines, PAGE_MARGIN_X, builder.cursorY)
-    builder.cursorY += blockHeight + 1
-
-    if (category.codes?.length) {
-      const codesText = `Koder: ${category.codes.join(', ')}`
-      const codesLines = doc.splitTextToSize(codesText, builder.contentWidth) as string[]
-      ensureSpace(builder, codesLines.length * 4 + 2)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8.5)
-      doc.setTextColor(...COLOR_ACCENT)
-      doc.text(codesLines, PAGE_MARGIN_X, builder.cursorY)
-      builder.cursorY += codesLines.length * 4 + 1
-    }
-
-    builder.cursorY += 2
-  }
-}
-
 function drawPageFooters(builder: PdfBuilder): void {
   const { doc } = builder
   const pageCount = doc.getNumberOfPages()
@@ -589,7 +552,6 @@ export function generateEmployeePdfReport(options: GeneratePdfReportOptions): vo
   }
 
   drawCalculationSteps(builder, calculation)
-  drawRulesAppendix(builder)
   drawPageFooters(builder)
 
   builder.doc.save(buildFileName(employeeReport.employeeId))
