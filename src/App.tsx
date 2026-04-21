@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import readXlsxFile, { readSheetNames } from 'read-excel-file/browser'
 import './App.css'
 import { EmployeeCard } from './components/EmployeeCard'
+import { ThemeToggle } from './components/ThemeToggle'
+import { useTheme } from './hooks/useTheme'
 import {
   calculateEmployeeResult,
   formatNumber,
@@ -20,6 +22,7 @@ function App() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const { resolved: resolvedTheme, toggle: toggleTheme } = useTheme()
 
   const effectiveStartDate = dateOverride ? parseDateInput(dateOverride) : report?.currentEndDate ?? null
   const activeEmployeeId = selectedEmployeeId || report?.employees[0]?.employeeId || ''
@@ -194,6 +197,10 @@ function App() {
             </svg>
             <span>Last ned PDF</span>
           </button>
+
+          <div className="toolbar-divider" />
+
+          <ThemeToggle resolved={resolvedTheme} onToggle={toggleTheme} />
         </div>
       </header>
 
