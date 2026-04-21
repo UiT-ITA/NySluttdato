@@ -67,6 +67,17 @@ export interface CalculationStep {
   notes: string[]
 }
 
+export interface CodeCalculationSummary {
+  code: string
+  rawDays: number
+  displayedDays: number
+  vacationBaseDays: number
+  sourceRows: number[]
+  hasDirectEffect: boolean
+  hasRowLevelRounding: boolean
+  vacationEligible: boolean
+}
+
 export interface EmployeeCalculation {
   employeeId: string
   initialEndDate: Date
@@ -76,6 +87,7 @@ export interface EmployeeCalculation {
   vacationDays: number
   steps: CalculationStep[]
   skippedCodes: string[]
+  codeSummaries: Record<string, CodeCalculationSummary>
 }
 
 export interface RowCalculationPreview {
@@ -95,6 +107,21 @@ interface RowContribution {
   baseDays: number
   absenceFraction: number
   rawDaysToAdd: number
+}
+
+function createEmptyCodeSummary(code: string): CodeCalculationSummary {
+  const rule = getAbsenceRule(code)
+
+  return {
+    code,
+    rawDays: 0,
+    displayedDays: 0,
+    vacationBaseDays: 0,
+    sourceRows: [],
+    hasDirectEffect: rule?.summationRule == null,
+    hasRowLevelRounding: false,
+    vacationEligible: rule?.vacationEligible ?? false,
+  }
 }
 
 export function parseWorkbook({
@@ -121,7 +148,7 @@ export function parseWorkbook({
     if (!employeeId || !startDate || !endDate || !code) {
       skippedRows.push({
         rowNumber,
-        reason: 'Missing employee, code, or date values.',
+        reason: 'Mangler ansatt-, kode- eller datoverdier.',
         code: code || undefined,
       })
       return
@@ -162,7 +189,7 @@ export function parseWorkbook({
       if (!employeeId || !startDate || !endDate || !code || hours == null) {
         skippedRows.push({
           rowNumber,
-          reason: 'Missing employee, code, date, or hour values in Ammefri sheet.',
+          reason: 'Mangler ansatt-, kode-, dato- eller timeverdier i Ammefri-arket.',
           code: code || undefined,
         })
         return
@@ -211,6 +238,7 @@ export function calculateEmployeeResult(
   const skippedCodes = new Set<string>()
   const directRows: RowContribution[] = []
   const summationRows = new Map<SummationRule, RowContribution[]>()
+  const codeSummaries = new Map<string, CodeCalculationSummary>()
 
   for (const row of rows) {
     const rule = getAbsenceRule(row.code)
@@ -237,6 +265,13 @@ export function calculateEmployeeResult(
     currentEndDate = step.nextEndDate
     steps.push(step)
 
+    const existingSummary = codeSummaries.get(contribution.row.code) ?? createEmptyCodeSummary(contribution.row.code)
+    existingSummary.rawDays += contribution.rawDaysToAdd
+    existingSummary.displayedDays += step.appliedDaysToAdd
+    existingSummary.vacationBaseDays += step.vacationBaseDays ?? 0
+    existingSummary.sourceRows.push(contribution.row.sourceRowNumber)
+    codeSummaries.set(contribution.row.code, existingSummary)
+
     if (contribution.rule.vacationEligible) {
       vacationBaseDays += step.appliedDaysToAdd
     }
@@ -248,6 +283,29 @@ export function calculateEmployeeResult(
       continue
     }
 
+    const rowsByCode = new Map<string, RowContribution[]>()
+    for (const contribution of aggregateRows) {
+      const existingRows = rowsByCode.get(contribution.row.code) ?? []
+      existingRows.push(contribution)
+      rowsByCode.set(contribution.row.code, existingRows)
+    }
+
+    for (const [code, codeRows] of rowsByCode.entries()) {
+      const rawDays = codeRows.reduce((sum, contribution) => sum + contribution.rawDaysToAdd, 0)
+      const { appliedDaysToAdd } = normalizeDaysToAdd(rawDays, SUMMATION_RULES[ruleNumber].roundingMode)
+      const vacationBase = codeRows.reduce(
+        (sum, contribution) => sum + getVacationBaseForContribution(contribution),
+        0,
+      )
+      const existingSummary = codeSummaries.get(code) ?? createEmptyCodeSummary(code)
+      existingSummary.rawDays += rawDays
+      existingSummary.displayedDays += appliedDaysToAdd
+      existingSummary.hasRowLevelRounding = true
+      existingSummary.vacationBaseDays += vacationBase
+      existingSummary.sourceRows.push(...codeRows.map((contribution) => contribution.row.sourceRowNumber))
+      codeSummaries.set(code, existingSummary)
+    }
+
     const step = createSummationStep(ruleNumber, aggregateRows, currentEndDate)
     currentEndDate = step.nextEndDate
     steps.push(step)
@@ -256,13 +314,30 @@ export function calculateEmployeeResult(
 
   const ruleThreeRows = summationRows.get(3)
   if (ruleThreeRows?.length) {
+    const rowsByCode = new Map<string, RowContribution[]>()
+    for (const contribution of ruleThreeRows) {
+      const existingRows = rowsByCode.get(contribution.row.code) ?? []
+      existingRows.push(contribution)
+      rowsByCode.set(contribution.row.code, existingRows)
+    }
+
     const step = createSummationStep(3, ruleThreeRows, currentEndDate)
+
+    for (const [code, codeRows] of rowsByCode.entries()) {
+      const rawDays = codeRows.reduce((sum, contribution) => sum + contribution.rawDaysToAdd, 0)
+      const existingSummary = codeSummaries.get(code) ?? createEmptyCodeSummary(code)
+      existingSummary.rawDays += rawDays
+      existingSummary.displayedDays += rawDays
+      existingSummary.sourceRows.push(...codeRows.map((contribution) => contribution.row.sourceRowNumber))
+      codeSummaries.set(code, existingSummary)
+    }
+
     currentEndDate = step.nextEndDate
     steps.push(step)
     vacationBaseDays += step.vacationBaseDays ?? 0
   }
 
-  const vacationRawDays = vacationBaseDays / VACATION_RULE.divisor * VACATION_RULE.multiplier
+  const vacationRawDays = (vacationBaseDays / VACATION_RULE.divisor) * VACATION_RULE.multiplier
   const vacationDays = vacationRawDays > 0 ? roundVacationDays(vacationRawDays) : 0
 
   if (vacationDays > 0) {
@@ -294,6 +369,7 @@ export function calculateEmployeeResult(
     vacationDays,
     steps,
     skippedCodes: Array.from(skippedCodes).sort(),
+    codeSummaries: Object.fromEntries(codeSummaries.entries()),
   }
 }
 
@@ -523,7 +599,7 @@ function normalizeDaysToAdd(
   }
 
   if (roundingMode === 'any-up') {
-    notes.push('Rounded up because this rule uses full days when a decimal remains.')
+    notes.push('Rundet opp fordi denne regelen bruker hele dager når det finnes desimaler.')
     return {
       appliedDaysToAdd: Math.ceil(roundedToThreeDecimals),
       notes,
@@ -533,7 +609,7 @@ function normalizeDaysToAdd(
   if (roundingMode === 'nearest-whole-half-up') {
     const roundedValue = Math.round(roundedToThreeDecimals)
     if (roundedValue !== roundedToThreeDecimals) {
-      notes.push('Rounded to the nearest whole day, with values ending in 0.5 rounding up.')
+      notes.push('Rundet til nærmeste hele dag, der verdier som ender på 0,5 rundes opp.')
     }
     return {
       appliedDaysToAdd: roundedValue,

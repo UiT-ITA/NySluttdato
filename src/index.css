@@ -1,81 +1,154 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 :root {
-  --text: #33414d;
-  --text-strong: #16222d;
-  --muted: #6f7c88;
-  --bg: #edf1f4;
-  --panel: #fbfcfd;
-  --panel-subtle: #f3f6f8;
-  --panel-muted: #eef2f5;
-  --border: rgba(22, 34, 45, 0.12);
-  --border-soft: rgba(22, 34, 45, 0.08);
-  --border-strong: rgba(22, 34, 45, 0.18);
-  --shadow: 0 8px 24px rgba(12, 24, 33, 0.06);
-  --sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-  --heading: 'IBM Plex Serif', Georgia, serif;
+  color-scheme: dark;
 
-  font: 17px/1.55 var(--sans);
-  letter-spacing: 0.01em;
-  color: var(--text);
+  /* Background tones */
+  --bg-0: #0b0d12;
+  --bg-1: #111318;
+  --bg-2: #181b24;
+  --bg-3: #1f2331;
+  --bg-4: #282d3e;
+
+  /* Borders */
+  --border-0: #1c2030;
+  --border-1: #272c3e;
+  --border-2: #363d54;
+
+  /* Text */
+  --text-0: #e6eaf1;
+  --text-1: #a4acbf;
+  --text-2: #6a7490;
+
+  /* Accent */
+  --accent: #5b9cf5;
+  --accent-glow: rgba(91, 156, 245, 0.12);
+  --accent-strong: #7db4fc;
+
+  /* Semantic */
+  --success: #3dd68c;
+  --success-bg: rgba(61, 214, 140, 0.08);
+  --warning: #f0b535;
+  --warning-bg: rgba(240, 181, 53, 0.08);
+  --error: #f06b6b;
+  --error-bg: rgba(240, 107, 107, 0.08);
+
+  /* Fonts */
+  --font-ui: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-1);
+  background: var(--bg-0);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  width: min(1480px, calc(100% - 24px));
-  margin: 0 auto;
-  min-height: 100svh;
-  box-sizing: border-box;
-}
-
-* {
-  box-sizing: border-box;
-}
-
 body {
-  margin: 0;
-  background:
-    linear-gradient(180deg, #f4f7f9 0%, #edf1f4 100%);
+  min-height: 100vh;
+  background: var(--bg-0);
 }
 
-h1,
-h2,
-h3,
-strong {
-  color: var(--text-strong);
+#root {
+  min-height: 100vh;
 }
 
-h1,
-h2,
-h3 {
-  font-family: var(--heading);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-ui);
+  color: var(--text-0);
+  font-weight: 600;
+  line-height: 1.25;
   margin: 0;
 }
 
-h1 {
-  font-size: clamp(1.9rem, 3vw, 2.4rem);
+h1 { font-size: 1.25rem; }
+h2 { font-size: 1rem; }
+h3 { font-size: 0.875rem; }
+
+strong { color: var(--text-0); }
+
+p { margin: 0; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
 }
 
-h2 {
-  font-size: clamp(1.05rem, 2vw, 1.3rem);
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 1px 5px;
+  background: var(--bg-3);
+  border-radius: var(--radius-sm);
+  color: var(--accent-strong);
 }
 
-h3 {
-  font-size: 1rem;
-}
-
-p {
-  margin: 0;
-}
-
-button,
-input,
-textarea,
-select {
+button, input, textarea, select {
   font: inherit;
+  color: inherit;
+}
+
+input[type="date"],
+select {
+  appearance: none;
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 5px 10px;
+  color: var(--text-0);
+  font-size: 0.8125rem;
+  height: 30px;
+  font-family: var(--font-mono);
+  transition: border-color 0.15s;
+}
+
+input[type="date"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+select {
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%236a7490' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+}
+
+::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg-0);
 }

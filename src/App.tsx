@@ -4,7 +4,6 @@ import './App.css'
 import { EmployeeCard } from './components/EmployeeCard'
 import {
   calculateEmployeeResult,
-  formatDate,
   formatNumber,
   parseDateInput,
   parseWorkbook,
@@ -68,7 +67,7 @@ function App() {
       setDateOverride(parsedReport.currentEndDate ? toDateInputValue(parsedReport.currentEndDate) : '')
       setSelectedEmployeeId(parsedReport.employees[0]?.employeeId ?? '')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to read the Excel file.'
+      const message = error instanceof Error ? error.message : 'Kunne ikke lese Excel-filen.'
       setErrorMessage(message)
       setReport(null)
       setSelectedEmployeeId('')
@@ -79,49 +78,50 @@ function App() {
   }
 
   return (
-    <main className="shell">
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">PhDChecker</p>
-          <h1>Absence extension calculator</h1>
+    <div className="app">
+      <header className="toolbar">
+        <div className="toolbar-brand">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1L14.5 8L8 15L1.5 8L8 1Z" fill="currentColor" opacity="0.9" />
+          </svg>
+          PhDChecker
         </div>
-        <div className="header-meta">
-          <span className="header-chip">Internal review tool</span>
-          <span className="header-chip">Workbook-driven calculation</span>
-        </div>
-      </header>
 
-      <section className="workspace-layout">
-        <aside className="control-rail">
-          <section className="rail-section">
-            <div className="section-heading-block">
-              <p className="eyebrow">Input</p>
-              <h2>Workbook source</h2>
-            </div>
+        <div className="toolbar-controls">
+          <label className="file-trigger" htmlFor="report-upload">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            {selectedFileName ? (
+              <span className="filename">{selectedFileName}</span>
+            ) : (
+              <span>Velg .xlsx-fil</span>
+            )}
+          </label>
+          <input
+            id="report-upload"
+            type="file"
+            accept=".xlsx"
+            onChange={handleFileChange}
+          />
 
-            <label className="file-picker" htmlFor="report-upload">
-              <span>Excel workbook</span>
-              <strong>{selectedFileName || 'Select .xlsx file'}</strong>
-            </label>
+          <div className="toolbar-divider" />
+
+          <div className="tool-input">
+            <span className="tool-input-label">Sluttdato</span>
             <input
-              id="report-upload"
-              type="file"
-              accept=".xlsx"
-              onChange={handleFileChange}
+              type="date"
+              value={dateOverride}
+              onChange={(event) => setDateOverride(event.target.value)}
             />
+          </div>
 
-            <label className="date-field">
-              <span>Current end date</span>
-              <input
-                type="date"
-                value={dateOverride}
-                onChange={(event) => setDateOverride(event.target.value)}
-              />
-            </label>
-
-            {report?.employees.length && report.employees.length > 1 ? (
-              <label className="date-field">
-                <span>Employee selector</span>
+          {report?.employees.length && report.employees.length > 1 ? (
+            <>
+              <div className="toolbar-divider" />
+              <div className="tool-input">
+                <span className="tool-input-label">Ansatt</span>
                 <select
                   value={activeEmployeeId}
                   onChange={(event) => setSelectedEmployeeId(event.target.value)}
@@ -132,113 +132,208 @@ function App() {
                     </option>
                   ))}
                 </select>
-              </label>
-            ) : null}
-
-            {isLoading ? <p className="status">Reading workbook...</p> : null}
-            {errorMessage ? <p className="status error">{errorMessage}</p> : null}
-            {!effectiveStartDate && report ? (
-              <p className="status error">Set a valid current end date to run the calculation.</p>
-            ) : null}
-          </section>
-
-          <section className="rail-section metric-rail">
-            <div className="section-heading-block">
-              <p className="eyebrow">Overview</p>
-              <h2>Run status</h2>
-            </div>
-
-            <div className="metric-list">
-              <div className="metric-row">
-                <span>Employees</span>
-                <strong>{totalEmployees}</strong>
               </div>
-              <div className="metric-row">
-                <span>Parsed rows</span>
-                <strong>{totalRows}</strong>
-              </div>
-              <div className="metric-row">
-                <span>Applied days</span>
-                <strong>{formatNumber(totalAppliedDays)}</strong>
-              </div>
-              <div className="metric-row">
-                <span>Warnings</span>
+            </>
+          ) : null}
+        </div>
+
+        <div className="toolbar-stats">
+          <div className="toolbar-stat">
+            <span>Ansatte</span>
+            <strong>{totalEmployees}</strong>
+          </div>
+          <div className="toolbar-divider" />
+          <div className="toolbar-stat">
+            <span>Rader</span>
+            <strong>{totalRows}</strong>
+          </div>
+          <div className="toolbar-divider" />
+          <div className="toolbar-stat">
+            <span>Dager</span>
+            <strong>{formatNumber(totalAppliedDays)}</strong>
+          </div>
+          {warningCount > 0 ? (
+            <>
+              <div className="toolbar-divider" />
+              <div className="toolbar-stat warn">
+                <span>⚠</span>
                 <strong>{warningCount}</strong>
               </div>
-              <div className="metric-row">
-                <span>Basis date</span>
-                <strong>{effectiveStartDate ? formatDate(effectiveStartDate) : 'Not set'}</strong>
-              </div>
-            </div>
-          </section>
+            </>
+          ) : null}
+        </div>
+      </header>
 
-          <section className="rail-section rules-panel">
-            <div className="section-heading-block">
-              <p className="eyebrow">Rules</p>
-              <h2>Calculation behavior</h2>
-            </div>
+      {isLoading ? <div className="status-bar loading">Leser arbeidsbok…</div> : null}
+      {errorMessage ? <div className="status-bar error">{errorMessage}</div> : null}
+      {!effectiveStartDate && report ? (
+        <div className="status-bar error">Sett en gyldig nåværende sluttdato for å kjøre beregningen.</div>
+      ) : null}
 
-            <ul className="rule-list">
-              <li>Direct rules are applied in chronological order for the selected employee.</li>
-              <li>Summeringsregel 1 and 2 are aggregated once across the employee report.</li>
-              <li>Summeringsregel 3 is aggregated and added after all other non-vacation absence.</li>
-              <li>Only codes marked with Ferieregel contribute to vacation.</li>
+      <main className="content">
+        {report?.skippedRows.length ? (
+          <details className="warning-panel">
+            <summary className="warning-panel-header">
+              <strong>{report.skippedRows.length} hoppet over rader</strong>
+              <span>▸</span>
+            </summary>
+            <ul>
+              {report.skippedRows.map((row) => (
+                <li key={`${row.rowNumber}-${row.reason}`}>
+                  Rad {row.rowNumber}: {row.reason}
+                </li>
+              ))}
             </ul>
-          </section>
-        </aside>
+          </details>
+        ) : null}
 
-        <section className="main-panel">
-          <div className="workspace-toolbar">
-            <div className="section-heading-block">
-              <p className="eyebrow">Analysis</p>
-              <h2>Employee results</h2>
+        {selectedEmployee ? (
+          <EmployeeCard employeeReport={selectedEmployee} calculation={calculation ?? undefined} />
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="12" y1="18" x2="12" y2="12" />
+                <polyline points="9 15 12 12 15 15" />
+              </svg>
             </div>
-
-            <div className="toolbar-stats">
-              <div>
-                <span>Workbook</span>
-                <strong>{selectedFileName || 'None loaded'}</strong>
-              </div>
-              <div>
-                <span>Selected employee</span>
-                <strong>{selectedEmployee?.employeeId ?? 'None'}</strong>
-              </div>
-            </div>
+            <h2>Last opp en arbeidsbok</h2>
+            <p>Beregningsresultater, kodegrupperinger og forlengelsessteg vises her.</p>
           </div>
+        )}
 
-          {report?.skippedRows.length ? (
-            <section className="warning-panel">
-              <div className="warning-panel-header">
-                <p className="eyebrow">Data issues</p>
-                <strong>{report.skippedRows.length} skipped rows</strong>
-              </div>
-              <ul>
-                {report.skippedRows.map((row) => (
-                  <li key={`${row.rowNumber}-${row.reason}`}>
-                    Row {row.rowNumber}: {row.reason}
+        <div className="rules-section">
+          <details>
+            <summary className="rules-toggle">
+              <h3>Regelkategorier</h3>
+              <span className="chevron">▸</span>
+            </summary>
+            <div className="rules-content">
+              <ul className="rule-list">
+                <li className="rule-item">
+                  <h4>Grunnregler</h4>
+                  <p>
+                    Beregningen følger norsk kalender, inkludert helger og norske helligdager.
+                    Fraværsprosent beregnes som differansen mellom kolonne F (<code>%arbFør2001</code>)
+                    og kolonne G (<code>Deltids-%0007</code>). Kolonne H og I brukes ikke.
+                  </p>
+                </li>
+                <li className="rule-item">
+                  <h4>Direkte lagt inn – kalenderdager</h4>
+                  <p>Ingen summeringsregel. Hver rad legges til sluttdatoen i kalenderdager.</p>
+                  <div className="rule-codes">
+                    {['110', '410', '415', '440', '462', '660', '670'].map((c) => (
+                      <span key={c} className="rule-code-tag">{c}</span>
+                    ))}
+                  </div>
+                </li>
+                <li className="rule-item">
+                  <h4>Direkte lagt inn – arbeidsdager</h4>
+                  <p>Ingen summeringsregel. Hver rad legges til sluttdatoen i arbeidsdager.</p>
+                  <div className="rule-codes">
+                    <span className="rule-code-tag">325</span>
+                  </div>
+                </li>
+                <li className="rule-item">
+                  <h4>Summeringsregel 1</h4>
+                  <p>
+                    Alle rader summeres. Summen legges til i kalenderdager.
+                    Desimaldel ≥ 0,5 rundes opp, ellers ned.
+                  </p>
+                  <div className="rule-codes">
+                    {['166', '167', '168', '169', '170', '199', '420', '425', '490'].map((c) => (
+                      <span key={c} className="rule-code-tag">{c}</span>
+                    ))}
+                  </div>
+                </li>
+                <li className="rule-item">
+                  <h4>Summeringsregel 2</h4>
+                  <p>
+                    Alle rader summeres. Summen legges til i kalenderdager.
+                    Desimaler rundes alltid opp.
+                  </p>
+                  <div className="rule-codes">
+                    {['435', '460', '461'].map((c) => (
+                      <span key={c} className="rule-code-tag">{c}</span>
+                    ))}
+                  </div>
+                </li>
+                <li className="rule-item">
+                  <h4>Summeringsregel 3</h4>
+                  <p>
+                    Alle rader summeres. Desimaler rundes opp til nærmeste hele arbeidsdag.
+                    Legges til etter alt annet fravær (unntatt ferie).
+                  </p>
+                  <div className="rule-codes">
+                    {['091', '120', '470'].map((c) => (
+                      <span key={c} className="rule-code-tag">{c}</span>
+                    ))}
+                  </div>
+                </li>
+                <li className="rule-item">
+                  <h4>Ferieregel</h4>
+                  <p>
+                    Beregnes som <code>dager / 30 × 2,916</code>. Desimaler rundes opp.
+                    Legges til helt til slutt i kalenderdager.
+                  </p>
+                  <div className="rule-codes">
+                    {['091', '110', '120', '170', '199', '410', '415', '420', '425', '440', '470'].map((c) => (
+                      <span key={c} className="rule-code-tag">{c}</span>
+                    ))}
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </details>
+
+          <details>
+            <summary className="rules-toggle">
+              <h3>Forklaring per kode</h3>
+              <span className="chevron">▸</span>
+            </summary>
+            <div className="rules-content">
+              <ul className="rule-list">
+                {[
+                  { code: '091', name: 'Ammefri', desc: 'Timer hentes fra eget ammefriark, deles på 7,5 for å omregnes til dager. Summeringsregel 3 + ferieregel.' },
+                  { code: '110', name: 'Sykemelding', desc: 'Direkte i kalenderdager. Ferieregel.' },
+                  { code: '120', name: 'Egenmelding', desc: 'Summeres i arbeidsdager. Summeringsregel 3 + ferieregel.' },
+                  { code: '166', name: 'Sykepermisjon m/AAP, m/uførepensjon SPK', desc: 'Summeringsregel 1.' },
+                  { code: '167', name: 'Sykepermisjon m/AAP, u/uførepensjon SPK', desc: 'Summeringsregel 1.' },
+                  { code: '168', name: 'Sykepermisjon u/AAP, m/uførepensjon SPK', desc: 'Summeringsregel 1.' },
+                  { code: '169', name: 'Sykepermisjon u/AAP, u/uførepensjon SPK', desc: 'Summeringsregel 1.' },
+                  { code: '170', name: 'Delvis sykemelding', desc: 'Summeringsregel 1 + ferieregel.' },
+                  { code: '199', name: 'Lønn ut over trygdeperiode', desc: 'Summeringsregel 1 + ferieregel.' },
+                  { code: '325', name: 'Militær repetisjonstjeneste', desc: 'Direkte i arbeidsdager.' },
+                  { code: '410', name: 'Foreldrepermisjon 100 %', desc: 'Direkte i kalenderdager. Ferieregel.' },
+                  { code: '415', name: 'Foreldrepermisjon 80 %', desc: 'Direkte i kalenderdager. Ferieregel.' },
+                  { code: '420', name: 'Gradert foreldreperm 100 %', desc: 'Summeringsregel 1 + ferieregel.' },
+                  { code: '425', name: 'Gradert foreldreperm 80 %', desc: 'Summeringsregel 1 + ferieregel.' },
+                  { code: '435', name: 'Omsorgspermisjon u/lønn', desc: 'Summeringsregel 2.' },
+                  { code: '440', name: 'Omsorg fødsel 2 uker m/lønn', desc: 'Direkte i kalenderdager. Ferieregel.' },
+                  { code: '460', name: 'Pleiepenger barn', desc: 'Summeringsregel 2.' },
+                  { code: '461', name: 'Opplæringspenger', desc: 'Summeringsregel 2.' },
+                  { code: '462', name: 'Pleiepenger nærstående', desc: 'Direkte i kalenderdager.' },
+                  { code: '470', name: 'Sykt barn', desc: 'Summeringsregel 3 + ferieregel.' },
+                  { code: '490', name: 'Permisjon iht. AML § 10-2', desc: 'Summeringsregel 1.' },
+                  { code: '660', name: 'Hovedavtalen § 40', desc: 'Direkte i kalenderdager.' },
+                  { code: '670', name: 'Hovedavtalen § 41', desc: 'Direkte i kalenderdager.' },
+                ].map((item) => (
+                  <li key={item.code} className="rule-item">
+                    <h4>
+                      <span className="rule-code-tag" style={{ marginRight: 6 }}>{item.code}</span>
+                      {item.name}
+                    </h4>
+                    <p>{item.desc}</p>
                   </li>
                 ))}
               </ul>
-            </section>
-          ) : null}
-
-          <section className="results-stack">
-            {selectedEmployee ? (
-              <EmployeeCard employeeReport={selectedEmployee} calculation={calculation ?? undefined} />
-            ) : (
-              <section className="empty-state">
-                <p className="eyebrow">No dataset loaded</p>
-                <h2>Upload a workbook to populate the review workspace.</h2>
-                <p>
-                  The results area will show a single selected employee calculation, source-code
-                  groupings, and the applied extension steps.
-                </p>
-              </section>
-            )}
-          </section>
-        </section>
-      </section>
-    </main>
+            </div>
+          </details>
+        </div>
+      </main>
+    </div>
   )
 }
 

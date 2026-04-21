@@ -26,62 +26,66 @@ export function EmployeeCard({ employeeReport, calculation }: EmployeeCardProps)
     }
   }
 
+  const hasWarnings = Boolean(calculation?.skippedCodes.length)
+
   return (
     <article className="employee-card">
       <header className="employee-header">
         <div className="employee-title-block">
-          <p className="card-label">Employee</p>
-          <div className="employee-title-row">
-            <h2>{employeeReport.employeeId}</h2>
-            <span className={`employee-badge${calculation?.skippedCodes.length ? ' warning' : ''}`}>
-              {calculation?.skippedCodes.length ? 'Contains unsupported codes' : 'Ready'}
-            </span>
-          </div>
+          <span className="employee-id">{employeeReport.employeeId}</span>
+          <span className={`employee-badge ${hasWarnings ? 'warning' : 'ok'}`}>
+            {hasWarnings ? 'Ikke-støttede koder' : 'Klar'}
+          </span>
         </div>
 
         <div className="final-date-box">
-          <p className="card-label">New end date</p>
-          <strong>{calculation ? formatDate(calculation.finalEndDate) : 'Not calculated'}</strong>
+          <span className="final-date-label">Ny sluttdato</span>
+          <span className="final-date-value">
+            {calculation ? formatDate(calculation.finalEndDate) : '—'}
+          </span>
         </div>
       </header>
 
       <div className="employee-meta">
-        <div>
-          <span>Initial end date</span>
-          <strong>{calculation ? formatDate(calculation.initialEndDate) : 'Not calculated'}</strong>
+        <div className="meta-cell">
+          <span className="meta-label">Opprinnelig sluttdato</span>
+          <span className="meta-value">
+            {calculation ? formatDate(calculation.initialEndDate) : '—'}
+          </span>
         </div>
-        <div>
-          <span>Rule steps</span>
-          <strong>{calculation ? calculation.steps.length : '-'}</strong>
+        <div className="meta-cell">
+          <span className="meta-label">Regelsteg</span>
+          <span className="meta-value">{calculation ? calculation.steps.length : '—'}</span>
         </div>
-        <div>
-          <span>Vacation base days</span>
-          <strong>{calculation ? formatNumber(calculation.vacationBaseDays) : '-'}</strong>
+        <div className="meta-cell">
+          <span className="meta-label">Feriegrunnlagsdager</span>
+          <span className="meta-value">
+            {calculation ? formatNumber(calculation.vacationBaseDays) : '—'}
+          </span>
         </div>
-        <div>
-          <span>Vacation days added</span>
-          <strong>{calculation ? formatNumber(calculation.vacationDays) : '-'}</strong>
+        <div className="meta-cell">
+          <span className="meta-label">Feriedager lagt til</span>
+          <span className="meta-value">
+            {calculation ? formatNumber(calculation.vacationDays) : '—'}
+          </span>
         </div>
-        <div>
-          <span>Rows processed</span>
-          <strong>{calculation ? calculation.processedRows : employeeReport.rows.length}</strong>
+        <div className="meta-cell">
+          <span className="meta-label">Behandlede rader</span>
+          <span className="meta-value">
+            {calculation ? calculation.processedRows : employeeReport.rows.length}
+          </span>
         </div>
       </div>
 
       {calculation?.skippedCodes.length ? (
-        <p className="inline-warning">
-          Unsupported absence codes skipped: {calculation.skippedCodes.join(', ')}
-        </p>
+        <div className="inline-warning">
+          ⚠ Ikke-støttede fraværskoder hoppet over: {calculation.skippedCodes.join(', ')}
+        </div>
       ) : null}
 
       <div className="code-groups">
         {Array.from(rowsByCode.entries()).map(([code, codeRows]) => (
-          <CodeGroupDetails
-            key={`${employeeReport.employeeId}-${code}`}
-            code={code}
-            rows={codeRows}
-            calculationSteps={calculation?.steps ?? []}
-          />
+          <CodeGroupDetails key={`${employeeReport.employeeId}-${code}`} code={code} rows={codeRows} />
         ))}
       </div>
 
