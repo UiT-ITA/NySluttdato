@@ -146,7 +146,7 @@ function drawHeader(
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(...COLOR_TEXT)
-  doc.text(`${APP_NAME} – Beregningsrapport`, PAGE_MARGIN_X, builder.cursorY)
+  doc.text(`Beregningsrapport for stipendiater og postdoktorer`, PAGE_MARGIN_X, builder.cursorY)
   builder.cursorY += 7
 
   doc.setFont('helvetica', 'normal')
