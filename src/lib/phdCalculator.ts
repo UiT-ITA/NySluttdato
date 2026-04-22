@@ -129,11 +129,12 @@ export function parseWorkbook({
   breastfeedingRows,
 }: WorkbookSheetRows): ParsedWorkbook {
   const currentEndDate = extractCurrentEndDate(leaveRows[0]?.[0])
+  const leaveDataStartRow = getLeaveDataStartRow(leaveRows)
   const employeeMap = new Map<string, ParsedAbsenceRow[]>()
   const skippedRows: ParsedWorkbook['skippedRows'] = []
 
-  leaveRows.slice(2).forEach((row, index) => {
-    const rowNumber = index + 3
+  leaveRows.slice(leaveDataStartRow - 1).forEach((row, index) => {
+    const rowNumber = index + leaveDataStartRow
 
     if (isEmptyRow(row)) {
       return
@@ -758,6 +759,11 @@ function extractCurrentEndDate(value: SpreadsheetCell): Date | null {
 
   const [, day, month, year] = match
   return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+}
+
+function getLeaveDataStartRow(leaveRows: SpreadsheetCell[][]): number {
+  const firstRowHasEndDate = extractCurrentEndDate(leaveRows[0]?.[0]) != null
+  return firstRowHasEndDate ? 3 : 2
 }
 
 function normalizeCode(value: SpreadsheetCell): string {
