@@ -9,6 +9,7 @@ export interface AbsenceCodeRule {
   additionMode: AdditionMode
   countingBasis: CountingBasis
   summationRule: SummationRule | null
+  standaloneRoundingMode?: RoundingMode
   vacationEligible: boolean
   verificationNotes: string[]
 }
@@ -34,6 +35,21 @@ export const ABSENCE_RULES: Record<string, AbsenceCodeRule> = {
       'Legg til totalt antall fraværsdager i arbeidsdager.',
       'Koden følger summeringsregel 3.',
       'Ferieregel gjelder.',
+    ],
+  },
+  '100': {
+    code: '100',
+    label: 'Intern permisjon',
+    additionMode: 'calendar',
+    countingBasis: 'days',
+    summationRule: null,
+    standaloneRoundingMode: 'nearest-whole-half-up',
+    vacationEligible: false,
+    verificationNotes: [
+      'Summer antall dager fravær.',
+      'Rund til nærmeste hele dag, der 0,5 og over rundes opp.',
+      'Legg til antall fraværsdager summert i kalenderdager.',
+      'Koden er en frittstående regel og inngår ikke i ferieregel eller summeringsregel 1, 2 eller 3.',
     ],
   },
   '110': {

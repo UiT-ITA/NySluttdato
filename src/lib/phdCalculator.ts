@@ -93,6 +93,7 @@ export interface EmployeeCalculation {
 export interface RowCalculationPreview {
   ruleLabel: string
   summationRule: SummationRule | null
+  isStandaloneRule: boolean
   additionMode: AdditionMode
   baseDays: number
   absenceFraction: number
@@ -118,7 +119,7 @@ function createEmptyCodeSummary(code: string): CodeCalculationSummary {
     displayedDays: 0,
     vacationBaseDays: 0,
     sourceRows: [],
-    hasDirectEffect: rule?.summationRule == null,
+    hasDirectEffect: rule != null && rule.summationRule == null && !rule.standaloneRoundingMode,
     hasRowLevelRounding: false,
     vacationEligible: rule?.vacationEligible ?? false,
   }
@@ -238,6 +239,7 @@ export function calculateEmployeeResult(
   const steps: CalculationStep[] = []
   const skippedCodes = new Set<string>()
   const directRows: RowContribution[] = []
+  const standaloneRows: RowContribution[] = []
   const summationRows = new Map<SummationRule, RowContribution[]>()
   const codeSummaries = new Map<string, CodeCalculationSummary>()
 
@@ -250,6 +252,11 @@ export function calculateEmployeeResult(
     }
 
     const contribution = createRowContribution(row, rule)
+
+    if (rule.standaloneRoundingMode) {
+      standaloneRows.push(contribution)
+      continue
+    }
 
     if (rule.summationRule) {
       const existingRows = summationRows.get(rule.summationRule) ?? []
@@ -311,6 +318,27 @@ export function calculateEmployeeResult(
     currentEndDate = step.nextEndDate
     steps.push(step)
     vacationBaseDays += step.vacationBaseDays ?? 0
+  }
+
+  const standaloneRowsByCode = new Map<string, RowContribution[]>()
+  for (const contribution of standaloneRows) {
+    const existingRows = standaloneRowsByCode.get(contribution.row.code) ?? []
+    existingRows.push(contribution)
+    standaloneRowsByCode.set(contribution.row.code, existingRows)
+  }
+
+  for (const [code, codeRows] of standaloneRowsByCode.entries()) {
+    const step = createStandaloneStep(codeRows, currentEndDate)
+    currentEndDate = step.nextEndDate
+    steps.push(step)
+
+    const existingSummary = codeSummaries.get(code) ?? createEmptyCodeSummary(code)
+    existingSummary.rawDays += step.rawDaysToAdd
+    existingSummary.displayedDays += step.appliedDaysToAdd
+    existingSummary.hasRowLevelRounding = true
+    existingSummary.vacationBaseDays += step.vacationBaseDays ?? 0
+    existingSummary.sourceRows.push(...codeRows.map((contribution) => contribution.row.sourceRowNumber))
+    codeSummaries.set(code, existingSummary)
   }
 
   const ruleThreeRows = summationRows.get(3)
@@ -426,12 +454,13 @@ export function previewRowCalculation(row: ParsedAbsenceRow): RowCalculationPrev
   const contribution = createRowContribution(row, rule)
   const roundingMode = rule.summationRule
     ? SUMMATION_RULES[rule.summationRule].roundingMode
-    : 'none'
+    : (rule.standaloneRoundingMode ?? 'none')
   const { appliedDaysToAdd } = normalizeDaysToAdd(contribution.rawDaysToAdd, roundingMode)
 
   return {
     ruleLabel: rule.label,
     summationRule: rule.summationRule,
+    isStandaloneRule: Boolean(rule.standaloneRoundingMode),
     additionMode: rule.additionMode,
     baseDays: contribution.baseDays,
     absenceFraction: contribution.absenceFraction,
@@ -444,7 +473,7 @@ export function previewRowCalculation(row: ParsedAbsenceRow): RowCalculationPrev
 function createRowContribution(row: ParsedAbsenceRow, rule: AbsenceCodeRule): RowContribution {
   const baseDays = getBaseDays(row, rule.countingBasis, rule.additionMode)
   const absenceFraction =
-    rule.countingBasis === 'hours-divided-by-7.5' || rule.summationRule == null
+    rule.countingBasis === 'hours-divided-by-7.5' || (rule.summationRule == null && !rule.standaloneRoundingMode)
       ? 1
       : getAbsenceFraction(row)
 
@@ -484,6 +513,40 @@ function createDirectStep(contribution: RowContribution, previousEndDate: Date):
     nextEndDate,
     vacationBaseDays: contribution.rule.vacationEligible ? contribution.rawDaysToAdd : 0,
     notes: contribution.rule.verificationNotes,
+  }
+}
+
+function createStandaloneStep(rows: RowContribution[], previousEndDate: Date): CalculationStep {
+  const firstContribution = rows[0]
+  const rule = firstContribution.rule
+  const rawDaysToAdd = rows.reduce((sum, contribution) => sum + contribution.rawDaysToAdd, 0)
+  const { appliedDaysToAdd, notes } = normalizeDaysToAdd(
+    rawDaysToAdd,
+    rule.standaloneRoundingMode ?? 'none',
+  )
+  const nextEndDate =
+    rule.additionMode === 'working'
+      ? addWorkingDays(previousEndDate, appliedDaysToAdd)
+      : addCalendarDays(previousEndDate, appliedDaysToAdd)
+
+  return {
+    id: `${firstContribution.row.employeeId}-standalone-${rule.code}`,
+    label: `${rule.label} (frittstående regel)`,
+    code: `STANDALONE-${rule.code}`,
+    sourceRows: rows.map((contribution) => contribution.row.sourceRowNumber),
+    sourceSheet: getCombinedSourceSheet(rows.map((contribution) => contribution.row)),
+    startDate: rows[0]?.row.startDate,
+    endDate: rows[rows.length - 1]?.row.endDate,
+    groupedSources: rows.map((contribution) => contribution.row),
+    additionMode: rule.additionMode,
+    baseDays: rawDaysToAdd,
+    absenceFraction: 1,
+    rawDaysToAdd,
+    appliedDaysToAdd,
+    previousEndDate,
+    nextEndDate,
+    vacationBaseDays: 0,
+    notes: [...rule.verificationNotes, ...notes],
   }
 }
 

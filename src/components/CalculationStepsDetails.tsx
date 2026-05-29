@@ -38,6 +38,10 @@ function getStepTypeText(step: EmployeeCalculation['steps'][number]): string {
     return 'Summering'
   }
 
+  if (step.code.startsWith('STANDALONE-')) {
+    return 'Frittstående'
+  }
+
   return step.additionMode === 'working' ? 'Direkte (arb.)' : 'Direkte (kal.)'
 }
 
