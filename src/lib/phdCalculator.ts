@@ -876,7 +876,21 @@ function toDate(value: SpreadsheetCell): Date | null {
   }
 
   if (typeof value === 'string') {
-    const parsed = new Date(value)
+    const text = value.trim()
+
+    // Norsk datoformat (dd.mm.yyyy) feiltolkes av Date-konstruktøren som mm/dd.
+    const dayMonthYear = /^(\d{1,2})[./](\d{1,2})[./](\d{4})(?:\s.*)?$/.exec(text)
+    if (dayMonthYear) {
+      const day = Number(dayMonthYear[1])
+      const month = Number(dayMonthYear[2])
+      const year = Number(dayMonthYear[3])
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return new Date(Date.UTC(year, month - 1, day))
+      }
+      return null
+    }
+
+    const parsed = new Date(text)
     if (!Number.isNaN(parsed.getTime())) {
       return atUtcMidnight(parsed)
     }

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import readXlsxFile, { readSheetNames } from 'read-excel-file/browser'
 import './App.css'
 import { EmployeeCard } from './components/EmployeeCard'
+import { PasteDataModal } from './components/PasteDataModal'
 import { ThemeToggle } from './components/ThemeToggle'
 import { useTheme } from './hooks/useTheme'
 import {
@@ -22,6 +23,7 @@ function App() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false)
   const { resolved: resolvedTheme, toggle: toggleTheme } = useTheme()
 
   const effectiveStartDate = dateOverride ? parseDateInput(dateOverride) : report?.currentEndDate ?? null
@@ -81,6 +83,15 @@ function App() {
     }
   }
 
+  function handlePasteApply(parsed: ParsedWorkbook) {
+    setReport(parsed)
+    setSelectedFileName('Innlimte rader')
+    setDateOverride(parsed.currentEndDate ? toDateInputValue(parsed.currentEndDate) : '')
+    setSelectedEmployeeId(parsed.employees[0]?.employeeId ?? '')
+    setErrorMessage('')
+    setIsPasteModalOpen(false)
+  }
+
   function handleDownloadReport() {
     if (!selectedEmployee || !calculation) {
       return
@@ -124,6 +135,14 @@ function App() {
             accept=".xlsx"
             onChange={handleFileChange}
           />
+
+          <button type="button" className="file-trigger" onClick={() => setIsPasteModalOpen(true)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            </svg>
+            <span>Lim inn rader</span>
+          </button>
 
           <div className="toolbar-divider" />
 
@@ -239,7 +258,7 @@ function App() {
                 <polyline points="9 15 12 12 15 15" />
               </svg>
             </div>
-            <h2>Last opp en arbeidsbok</h2>
+            <h2>Last opp en arbeidsbok eller lim inn rader</h2>
             <p>Beregningsresultater, kodegrupperinger og forlengelsessteg vises her.</p>
           </div>
         )}
@@ -385,6 +404,12 @@ function App() {
           </details>
         </div>
       </main>
+
+      <PasteDataModal
+        open={isPasteModalOpen}
+        onClose={() => setIsPasteModalOpen(false)}
+        onApply={handlePasteApply}
+      />
     </div>
   )
 }
