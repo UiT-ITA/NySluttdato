@@ -3,6 +3,7 @@ import { getAbsenceRule, type CountingBasis } from './rules'
 export type CodeDisplayType =
   | 'direct-calendar'
   | 'direct-working'
+  | 'standalone-calendar'
   | 'summation-rule-1'
   | 'summation-rule-2'
   | 'summation-rule-3-days'
@@ -30,6 +31,10 @@ export function getCodeDisplayType(code: string, countingBasis: CountingBasis): 
 
   if (!rule) {
     return 'direct-calendar'
+  }
+
+  if (rule.standaloneRoundingMode) {
+    return 'standalone-calendar'
   }
 
   if (rule.summationRule == null) {
@@ -60,6 +65,12 @@ export function getCodeDisplayConfig(displayType: CodeDisplayType): CodeGroupDis
         headerTotalLabel: 'Arbeidsdager',
         groupedByLabel: null,
         tableColumns: ['row', 'from', 'to', 'baseDays'],
+      }
+    case 'standalone-calendar':
+      return {
+        headerTotalLabel: 'Delsum',
+        groupedByLabel: 'Frittstående regel',
+        tableColumns: ['row', 'from', 'to', 'workPercent', 'partTimePercent', 'baseDays', 'absenceFraction', 'calculatedDays'],
       }
     case 'summation-rule-1':
       return {
@@ -122,6 +133,12 @@ export const RULE_CATEGORY_DESCRIPTIONS: RuleCategoryDescription[] = [
     heading: 'Grunnregler',
     description:
       'Beregningen følger norsk kalender, inkludert helger og norske helligdager. Fraværsprosent beregnes som differansen mellom kolonne F (%arbFør2001) og kolonne G (Deltids-%0007). Kolonne H og I brukes ikke.',
+  },
+  {
+    heading: 'Frittstående regel',
+    description:
+      'Alle rader summeres separat. Summen legges til i kalenderdager. Desimaldel lik eller over 0,5 rundes opp, ellers ned. Inngår ikke i ferieregel eller summeringsregel 1, 2 eller 3.',
+    codes: ['100'],
   },
   {
     heading: 'Direkte lagt inn – kalenderdager',

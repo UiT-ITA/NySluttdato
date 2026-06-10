@@ -261,6 +261,17 @@ function App() {
                   </p>
                 </li>
                 <li className="rule-item">
+                  <h4>Frittstående regel</h4>
+                  <p>
+                    Alle rader summeres separat. Summen legges til i kalenderdager.
+                    Desimaldel ≥ 0,5 rundes opp, ellers ned. Inngår ikke i ferieregel
+                    eller summeringsregel 1, 2 eller 3.
+                  </p>
+                  <div className="rule-codes">
+                    <span className="rule-code-tag">100</span>
+                  </div>
+                </li>
+                <li className="rule-item">
                   <h4>Direkte lagt inn – kalenderdager</h4>
                   <p>Ingen summeringsregel. Hver rad legges til sluttdatoen i kalenderdager.</p>
                   <div className="rule-codes">
@@ -337,6 +348,7 @@ function App() {
               <ul className="rule-list">
                 {[
                   { code: '091', name: 'Ammefri', desc: 'Timer hentes fra eget ammefriark, deles på 7,5 for å omregnes til dager. Summering 3 + ferieregel.' },
+                  { code: '100', name: 'Intern permisjon', desc: 'Frittstående regel i kalenderdager. Rundes samlet til nærmeste hele dag med 0,5 opp. Ingen ferieregel.' },
                   { code: '110', name: 'Sykemelding', desc: 'Direkte i kalenderdager. Ferieregel.' },
                   { code: '120', name: 'Egenmelding', desc: 'Summeres i arbeidsdager. Summering 3 + ferieregel.' },
                   { code: '166', name: 'Sykepermisjon m/AAP, m/uførepensjon SPK', desc: 'Summering 1.' },
