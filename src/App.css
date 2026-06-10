@@ -904,6 +904,82 @@ details[open] > .rules-toggle .chevron {
 }
 
 /* ═══════════════════════════════════════════
+   DATE FIELD (alltid dd.mm.åååå)
+   ═══════════════════════════════════════════ */
+
+.date-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.date-field-text {
+  width: 132px;
+  height: 34px;
+  padding: 5px 32px 5px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  color: var(--text-0);
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  transition: border-color 0.15s;
+}
+
+.date-field-text:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.date-field-text[aria-invalid='true'] {
+  border-color: var(--error);
+}
+
+.date-field-text[aria-invalid='true']:focus {
+  border-color: var(--error);
+  box-shadow: 0 0 0 2px var(--error-bg);
+}
+
+.date-field-text::placeholder {
+  color: var(--text-2);
+  opacity: 0.7;
+}
+
+.date-field-picker-button {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.date-field-picker-button:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+.date-field-picker-input {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
    PASTE MODAL
    ═══════════════════════════════════════════ */
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import readXlsxFile, { readSheetNames } from 'read-excel-file/browser'
 import './App.css'
+import { DateField } from './components/DateField'
 import { EmployeeCard } from './components/EmployeeCard'
 import { PasteDataModal } from './components/PasteDataModal'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -148,11 +149,7 @@ function App() {
 
           <div className="tool-input">
             <span className="tool-input-label">Sluttdato</span>
-            <input
-              type="date"
-              value={dateOverride}
-              onChange={(event) => setDateOverride(event.target.value)}
-            />
+            <DateField value={dateOverride} onChange={setDateOverride} />
           </div>
 
           {report?.employees.length && report.employees.length > 1 ? (
