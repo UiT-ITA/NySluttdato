@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
 
 *,
 *::before,
@@ -8,51 +8,43 @@
   padding: 0;
 }
 
+/* ============================================================
+   PhD Checker · UiT designtokens
+   Farger fra UiT fargekart (05.2024):
+   Hovedfarge #007396 · Mørk #003349 · Rød #CB333B
+   Gul #F2A900 · Lys cyan #59BEC9
+   ============================================================ */
+
 :root {
   color-scheme: light dark;
 
-  /* Dark palette (default) */
-  --bg-0: #0b0d12;
-  --bg-1: #111318;
-  --bg-2: #181b24;
-  --bg-3: #1f2331;
-  --bg-4: #282d3e;
+  /* Tema: lys (default) */
+  --pc-bg: #eef2f4;
+  --pc-surface: #ffffff;
+  --pc-surface-2: #f4f8f9;
+  --pc-line: #d9e3e7;
+  --pc-line-strong: #b9ccd3;
+  --pc-text: #14323f;
+  --pc-text-dim: #5c7682;
+  --pc-text-faint: #87989f;
+  --pc-navy: #003349;
+  --pc-blue: #007396;
+  --pc-blue-soft: #e1eef2;
+  --pc-cyan: #59bec9;
+  --pc-cyan-soft: #e2f4f6;
+  --pc-yellow: #f2a900;
+  --pc-yellow-soft: #fdf3dc;
+  --pc-red: #cb333b;
+  --pc-red-soft: #f9e4e5;
+  --pc-hero-text: #ffffff;
+  --pc-accent: var(--pc-blue);
+  --pc-shadow: 0 1px 2px rgba(0, 51, 73, 0.06), 0 4px 16px rgba(0, 51, 73, 0.07);
 
-  --border-0: #1c2030;
-  --border-1: #272c3e;
-  --border-2: #363d54;
-
-  --text-0: #e6eaf1;
-  --text-1: #a4acbf;
-  --text-2: #6a7490;
-
-  --accent: #5b9cf5;
-  --accent-glow: rgba(91, 156, 245, 0.12);
-  --accent-strong: #7db4fc;
-
-  --success: #3dd68c;
-  --success-bg: rgba(61, 214, 140, 0.08);
-  --warning: #f0b535;
-  --warning-bg: rgba(240, 181, 53, 0.08);
-  --error: #f06b6b;
-  --error-bg: rgba(240, 107, 107, 0.08);
-
-  --toolbar-bg: rgba(17, 19, 24, 0.92);
-
-  /* Fonts */
-  --font-ui: 'Outfit', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-  /* Radii */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-
-  font-family: var(--font-ui);
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--text-1);
-  background: var(--bg-0);
+  font-family: 'Open Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--pc-text);
+  background: var(--pc-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -60,122 +52,112 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-:root[data-theme='dark'] {
-  color-scheme: dark;
-}
-
 :root[data-theme='light'] {
   color-scheme: light;
+}
 
-  /* Light palette */
-  --bg-0: #f7f8fa;
-  --bg-1: #ffffff;
-  --bg-2: #f1f3f7;
-  --bg-3: #e6eaf1;
-  --bg-4: #d9dee8;
+:root[data-theme='dark'] {
+  color-scheme: dark;
 
-  --border-0: #e4e7ee;
-  --border-1: #d4d9e3;
-  --border-2: #b9c1d0;
-
-  --text-0: #12141a;
-  --text-1: #4a5266;
-  --text-2: #7a8296;
-
-  --accent: #2f6fe0;
-  --accent-glow: rgba(47, 111, 224, 0.1);
-  --accent-strong: #1f58c1;
-
-  --success: #1ea565;
-  --success-bg: rgba(30, 165, 101, 0.09);
-  --warning: #b87a09;
-  --warning-bg: rgba(184, 122, 9, 0.09);
-  --error: #d93b3b;
-  --error-bg: rgba(217, 59, 59, 0.08);
-
-  --toolbar-bg: rgba(255, 255, 255, 0.88);
+  /* Tema: mørk */
+  --pc-bg: #00222f;
+  --pc-surface: #04374c;
+  --pc-surface-2: #032d3f;
+  --pc-line: #0e4961;
+  --pc-line-strong: #1a5973;
+  --pc-text: #e8f2f5;
+  --pc-text-dim: #93b2be;
+  --pc-text-faint: #6a93a3;
+  --pc-navy: #003349;
+  --pc-blue: #2b97b8;
+  --pc-blue-soft: #07415a;
+  --pc-cyan: #59bec9;
+  --pc-cyan-soft: #0a4a5a;
+  --pc-yellow: #f2a900;
+  --pc-yellow-soft: #4a3b10;
+  --pc-red: #e05a61;
+  --pc-red-soft: #5a2226;
+  --pc-hero-text: #ffffff;
+  --pc-accent: var(--pc-cyan);
+  --pc-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 body {
   min-height: 100vh;
-  background: var(--bg-0);
+  background: var(--pc-bg);
 }
 
 #root {
   min-height: 100vh;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-ui);
-  color: var(--text-0);
-  font-weight: 600;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--pc-text);
+  font-weight: 700;
   line-height: 1.25;
   margin: 0;
 }
 
-h1 { font-size: 1.25rem; }
-h2 { font-size: 1rem; }
-h3 { font-size: 0.875rem; }
+strong {
+  color: var(--pc-text);
+}
 
-strong { color: var(--text-0); }
-
-p { margin: 0; }
+p {
+  margin: 0;
+}
 
 a {
-  color: var(--accent);
+  color: var(--pc-accent);
   text-decoration: none;
 }
 
 code {
-  font-family: var(--font-mono);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   font-size: 0.85em;
   padding: 1px 5px;
-  background: var(--bg-3);
-  border-radius: var(--radius-sm);
-  color: var(--accent-strong);
+  background: var(--pc-blue-soft);
+  border-radius: 4px;
+  color: var(--pc-accent);
 }
 
-button, input, textarea, select {
+button,
+input,
+textarea,
+select {
   font: inherit;
   color: inherit;
 }
 
-input[type="date"],
 select {
   appearance: none;
-  background: var(--bg-2);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  padding: 5px 10px;
-  color: var(--text-0);
-  font-size: 0.8125rem;
-  height: 34px;
-  font-family: var(--font-mono);
-  transition: border-color 0.15s;
+  background: transparent;
+  border: none;
+  padding: 0 22px 0 0;
+  color: var(--pc-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%235c7682' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  cursor: pointer;
 }
 
-input[type="date"]:focus,
 select:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
-
-select {
-  padding-right: 28px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%236a7490' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  cursor: pointer;
 }
 
 ::-webkit-calendar-picker-indicator {
-  filter: invert(0.7);
   cursor: pointer;
 }
 
-:root[data-theme='light'] ::-webkit-calendar-picker-indicator {
-  filter: invert(0.35);
+:root[data-theme='dark'] ::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
 }
 
 details > summary {
@@ -188,6 +170,6 @@ details > summary::-webkit-details-marker {
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--bg-0);
+  background: var(--pc-blue);
+  color: #ffffff;
 }

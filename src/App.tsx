@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import readXlsxFile, { readSheetNames } from 'read-excel-file/browser'
 import './App.css'
+import uitLogo from './assets/uit-logo-hvit.png'
 import { DateField } from './components/DateField'
 import { EmployeeCard } from './components/EmployeeCard'
 import { PasteDataModal } from './components/PasteDataModal'
@@ -8,6 +9,7 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { useTheme } from './hooks/useTheme'
 import {
   calculateEmployeeResult,
+  formatDate,
   formatNumber,
   parseDateInput,
   parseWorkbook,
@@ -21,31 +23,33 @@ function App() {
   const [report, setReport] = useState<ParsedWorkbook | null>(null)
   const [selectedFileName, setSelectedFileName] = useState('')
   const [dateOverride, setDateOverride] = useState('')
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false)
+  const [calcDetailsOpen, setCalcDetailsOpen] = useState(false)
   const { resolved: resolvedTheme, toggle: toggleTheme } = useTheme()
 
   const effectiveStartDate = dateOverride ? parseDateInput(dateOverride) : report?.currentEndDate ?? null
-  const activeEmployeeId = selectedEmployeeId || report?.employees[0]?.employeeId || ''
+  const hasMultipleEmployees = (report?.employees.length ?? 0) > 1
 
   const selectedEmployee = useMemo(
-    () => report?.employees.find((employee) => employee.employeeId === activeEmployeeId) ?? null,
-    [activeEmployeeId, report],
+    () => (hasMultipleEmployees ? null : report?.employees[0] ?? null),
+    [hasMultipleEmployees, report],
   )
+  const activeEmployeeId = selectedEmployee?.employeeId ?? ''
 
   const calculation: EmployeeCalculation | null =
     selectedEmployee && effectiveStartDate
       ? calculateEmployeeResult(selectedEmployee.employeeId, selectedEmployee.rows, effectiveStartDate)
       : null
 
-  const totalEmployees = report?.employees.length ?? 0
-  const totalRows = report?.employees.reduce((sum, employee) => sum + employee.rows.length, 0) ?? 0
   const totalAppliedDays = calculation
     ? calculation.steps.reduce((sum, step) => sum + step.appliedDaysToAdd, 0)
     : 0
-  const warningCount = (report?.skippedRows.length ?? 0) + (calculation?.skippedCodes.length ?? 0)
+  const vacationAppliedDays =
+    calculation?.steps.find((step) => step.code === 'VACATION')?.appliedDaysToAdd ?? 0
+  const absenceAppliedDays = totalAppliedDays - vacationAppliedDays
+  const hasWarnings = Boolean(calculation?.skippedCodes.length)
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -72,12 +76,10 @@ function App() {
       setReport(parsedReport)
       setSelectedFileName(file.name)
       setDateOverride(parsedReport.currentEndDate ? toDateInputValue(parsedReport.currentEndDate) : '')
-      setSelectedEmployeeId(parsedReport.employees[0]?.employeeId ?? '')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Kunne ikke lese Excel-filen.'
       setErrorMessage(message)
       setReport(null)
-      setSelectedEmployeeId('')
     } finally {
       setIsLoading(false)
       event.target.value = ''
@@ -88,9 +90,15 @@ function App() {
     setReport(parsed)
     setSelectedFileName('Innlimte rader')
     setDateOverride(parsed.currentEndDate ? toDateInputValue(parsed.currentEndDate) : '')
-    setSelectedEmployeeId(parsed.employees[0]?.employeeId ?? '')
     setErrorMessage('')
     setIsPasteModalOpen(false)
+  }
+
+  function handleClearFile() {
+    setReport(null)
+    setSelectedFileName('')
+    setDateOverride('')
+    setErrorMessage('')
   }
 
   function handleDownloadReport() {
@@ -106,118 +114,32 @@ function App() {
     })
   }
 
+  function handleShowCalcDetails() {
+    setCalcDetailsOpen(true)
+    requestAnimationFrame(() => {
+      document.getElementById('beregning-details')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+  }
+
   const canDownloadReport = Boolean(selectedEmployee && calculation)
 
   return (
     <div className="app">
-      <header className="toolbar">
-        <div className="toolbar-brand">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 1L14.5 8L8 15L1.5 8L8 1Z" fill="currentColor" opacity="0.9" />
-          </svg>
-          PhDChecker
+      <header className="topbar">
+        <img className="topbar-logo" src={uitLogo} alt="UiT Norges arktiske universitet" />
+        <div className="topbar-sep" />
+        <div className="topbar-appname">
+          PhD Checker
+          <small>Fastsettelse av sluttdato</small>
         </div>
-
-        <div className="toolbar-controls">
-          <label className="file-trigger" htmlFor="report-upload">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            {selectedFileName ? (
-              <span className="filename">{selectedFileName}</span>
-            ) : (
-              <span>Velg .xlsx-fil</span>
-            )}
-          </label>
-          <input
-            id="report-upload"
-            type="file"
-            accept=".xlsx"
-            onChange={handleFileChange}
-          />
-
-          <button type="button" className="file-trigger" onClick={() => setIsPasteModalOpen(true)}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-            </svg>
-            <span>Lim inn rader</span>
-          </button>
-
-          <div className="toolbar-divider" />
-
-          <div className="tool-input">
-            <span className="tool-input-label">Sluttdato</span>
-            <DateField value={dateOverride} onChange={setDateOverride} />
+        <div className="spacer" />
+        <div className="topbar-result">
+          <div className="topbar-result-label">Ny sluttdato</div>
+          <div className="topbar-result-value">
+            {calculation ? formatDate(calculation.finalEndDate) : '—'}
           </div>
-
-          {report?.employees.length && report.employees.length > 1 ? (
-            <>
-              <div className="toolbar-divider" />
-              <div className="tool-input">
-                <span className="tool-input-label">Ansatt</span>
-                <select
-                  value={activeEmployeeId}
-                  onChange={(event) => setSelectedEmployeeId(event.target.value)}
-                >
-                  {report.employees.map((employee) => (
-                    <option key={employee.employeeId} value={employee.employeeId}>
-                      {employee.employeeId}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
-          ) : null}
         </div>
-
-        <div className="toolbar-stats">
-          <div className="toolbar-stat">
-            <span>Ansatte</span>
-            <strong>{totalEmployees}</strong>
-          </div>
-          <div className="toolbar-divider" />
-          <div className="toolbar-stat">
-            <span>Rader</span>
-            <strong>{totalRows}</strong>
-          </div>
-          <div className="toolbar-divider" />
-          <div className="toolbar-stat">
-            <span>Dager</span>
-            <strong>{formatNumber(totalAppliedDays)}</strong>
-          </div>
-          {warningCount > 0 ? (
-            <>
-              <div className="toolbar-divider" />
-              <div className="toolbar-stat warn">
-                <span>⚠</span>
-                <strong>{warningCount}</strong>
-              </div>
-            </>
-          ) : null}
-
-          <div className="toolbar-divider" />
-
-          <button
-            type="button"
-            className="toolbar-action"
-            onClick={handleDownloadReport}
-            disabled={!canDownloadReport}
-            title={canDownloadReport ? 'Last ned PDF-rapport' : 'Last opp fil og velg sluttdato først'}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span>Last ned PDF</span>
-          </button>
-
-          <div className="toolbar-divider" />
-
-          <ThemeToggle resolved={resolvedTheme} onToggle={toggleTheme} />
-        </div>
+        <ThemeToggle resolved={resolvedTheme} onToggle={toggleTheme} />
       </header>
 
       {isLoading ? <div className="status-bar loading">Leser arbeidsbok…</div> : null}
@@ -225,46 +147,208 @@ function App() {
       {!effectiveStartDate && report ? (
         <div className="status-bar error">Sett en gyldig nåværende sluttdato for å kjøre beregningen.</div>
       ) : null}
+      {hasMultipleEmployees ? (
+        <div className="status-bar error">
+          Datagrunnlaget inneholder {report?.employees.length} ansatte (
+          {report?.employees.map((employee) => employee.employeeId).join(', ')}). Verktøyet støtter kun
+          én ansatt om gangen — last inn data for én ansatt.
+        </div>
+      ) : null}
 
-      <main className="content">
-        {report?.skippedRows.length ? (
-          <details className="warning-panel">
-            <summary className="warning-panel-header">
-              <strong>{report.skippedRows.length} hoppet over rader</strong>
-              <span>▸</span>
-            </summary>
-            <ul>
-              {report.skippedRows.map((row) => (
-                <li key={`${row.rowNumber}-${row.reason}`}>
-                  Rad {row.rowNumber}: {row.reason}
-                </li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
-
-        {selectedEmployee ? (
-          <EmployeeCard employeeReport={selectedEmployee} calculation={calculation ?? undefined} />
-        ) : (
-          <div className="empty-state">
-            <div className="empty-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="12" y1="18" x2="12" y2="12" />
-                <polyline points="9 15 12 12 15 15" />
-              </svg>
+      <div className="layout">
+        <aside className="sidebar">
+          {selectedEmployee ? (
+            <div className="card result-card">
+              <div className="result-card-id-row">
+                <span className="result-card-id">{selectedEmployee.employeeId}</span>
+                <span className={`pc-status ${hasWarnings ? 'pc-status--warn' : 'pc-status--ok'}`}>
+                  {hasWarnings ? 'Ikke-støttede koder' : 'Klar'}
+                </span>
+              </div>
+              <div className="result-card-dates">
+                <span className="result-card-old">
+                  {calculation ? formatDate(calculation.initialEndDate) : '—'}
+                </span>
+                <span className="result-card-arrow">→</span>
+              </div>
+              <div className="result-card-new">
+                {calculation ? formatDate(calculation.finalEndDate) : '—'}
+              </div>
+              <div className="result-card-sub">
+                Ny sluttdato · {formatNumber(absenceAppliedDays)} fraværsdager +{' '}
+                {formatNumber(vacationAppliedDays)} feriedager
+              </div>
+              <button
+                type="button"
+                className="pc-btn pc-btn-primary"
+                style={{ marginTop: 14, width: '100%', justifyContent: 'center' }}
+                onClick={handleDownloadReport}
+                disabled={!canDownloadReport}
+                title={canDownloadReport ? 'Last ned PDF-rapport' : 'Last opp fil og velg sluttdato først'}
+              >
+                ↓ Last ned PDF-rapport
+              </button>
             </div>
-            <h2>Last opp en arbeidsbok eller lim inn rader</h2>
-            <p>Beregningsresultater, kodegrupperinger og forlengelsessteg vises her.</p>
-          </div>
-        )}
+          ) : null}
 
-        <div className="rules-section">
-          <details>
-            <summary className="rules-toggle">
+          <div className="card">
+            <span className="card-heading">Datagrunnlag</span>
+            <div className="data-card-buttons">
+              <label className="pc-btn file-trigger" htmlFor="report-upload">
+                <span className="file-trigger-icon">
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  {selectedFileName ? (
+                    <span className="filename">{selectedFileName}</span>
+                  ) : (
+                    <span>Velg .xlsx-fil</span>
+                  )}
+                </span>
+                {selectedFileName ? (
+                  <button
+                    type="button"
+                    className="file-clear"
+                    title="Fjern data"
+                    aria-label="Fjern data"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      handleClearFile()
+                    }}
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </label>
+              <input id="report-upload" type="file" accept=".xlsx" onChange={handleFileChange} />
+              <button
+                type="button"
+                className="pc-btn pc-btn-ghost"
+                onClick={() => setIsPasteModalOpen(true)}
+              >
+                Lim inn rader
+              </button>
+            </div>
+            <div className="data-card-divider" />
+            <div className="data-card-fields">
+              <span className="pc-field">
+                <label>Sluttdato</label>
+                <DateField value={dateOverride} onChange={setDateOverride} />
+              </span>
+              <span className="pc-field">
+                <label>Ansatt</label>
+                <b>{activeEmployeeId || '—'}</b>
+              </span>
+            </div>
+          </div>
+
+          {calculation?.steps.length ? (
+            <div className="card">
+              <div className="steps-card-head">
+                <span className="card-heading">Beregning · {calculation.steps.length} steg</span>
+                <div className="spacer" />
+                <button type="button" className="pc-link" onClick={handleShowCalcDetails}>
+                  Vis detaljer
+                </button>
+              </div>
+              <div>
+                <div className="step-row step-start">
+                  <div className="step-marker">
+                    <span className="step-dot" />
+                    <span className="step-line" />
+                  </div>
+                  <div className="step-label">Start</div>
+                  <div className="step-date">{formatDate(calculation.initialEndDate)}</div>
+                </div>
+                {calculation.steps.map((step, index) => (
+                  <div className="step-row" key={step.id}>
+                    <div className="step-marker">
+                      <span className="step-dot" />
+                      {index < calculation.steps.length - 1 ? <span className="step-line" /> : null}
+                    </div>
+                    <div className="step-label">
+                      {step.label}{' '}
+                      <span className="step-added">+{formatNumber(step.appliedDaysToAdd)} d</span>
+                    </div>
+                    <div className="step-date">{formatDate(step.nextEndDate)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </aside>
+
+        <main className="main">
+          {report?.skippedRows.length ? (
+            <details className="pc-cat warning-panel">
+              <summary className="pc-cat-head">
+                <span className="pc-caret" />
+                <h3>{report.skippedRows.length} hoppet over rader</h3>
+              </summary>
+              <ul>
+                {report.skippedRows.map((row) => (
+                  <li key={`${row.rowNumber}-${row.reason}`}>
+                    Rad {row.rowNumber}: {row.reason}
+                    <div className="skipped-row-cells">
+                      {row.cells?.length
+                        ? row.cells.map((cell) => cell || '(tom)').join(' · ')
+                        : '(ingen celleverdier funnet)'}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+
+          {selectedEmployee ? (
+            <EmployeeCard
+              employeeReport={selectedEmployee}
+              calculation={calculation ?? undefined}
+              calcDetailsOpen={calcDetailsOpen}
+              onCalcDetailsToggle={setCalcDetailsOpen}
+            />
+          ) : (
+            <div className="card empty-state">
+              <div className="empty-icon">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <polyline points="9 15 12 12 15 15" />
+                </svg>
+              </div>
+              <h2>Last opp en arbeidsbok eller lim inn rader</h2>
+              <p>Beregningsresultater, kodegrupperinger og forlengelsessteg vises her.</p>
+            </div>
+          )}
+
+          <div className="pc-section-title">Regler</div>
+          <details className="pc-cat">
+            <summary className="pc-cat-head">
+              <span className="pc-caret" />
               <h3>Regelkategorier</h3>
-              <span className="chevron">▸</span>
             </summary>
             <div className="rules-content">
               <ul className="rule-list">
@@ -355,10 +439,10 @@ function App() {
             </div>
           </details>
 
-          <details>
-            <summary className="rules-toggle">
+          <details className="pc-cat">
+            <summary className="pc-cat-head">
+              <span className="pc-caret" />
               <h3>Forklaring per kode</h3>
-              <span className="chevron">▸</span>
             </summary>
             <div className="rules-content">
               <ul className="rule-list">
@@ -399,8 +483,8 @@ function App() {
               </ul>
             </div>
           </details>
-        </div>
-      </main>
+        </main>
+      </div>
 
       <PasteDataModal
         open={isPasteModalOpen}

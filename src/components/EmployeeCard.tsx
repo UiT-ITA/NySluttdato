@@ -12,9 +12,16 @@ type EmployeeReport = ParsedWorkbook['employees'][number]
 interface EmployeeCardProps {
   employeeReport: EmployeeReport
   calculation?: EmployeeCalculation
+  calcDetailsOpen?: boolean
+  onCalcDetailsToggle?: (open: boolean) => void
 }
 
-export function EmployeeCard({ employeeReport, calculation }: EmployeeCardProps) {
+export function EmployeeCard({
+  employeeReport,
+  calculation,
+  calcDetailsOpen,
+  onCalcDetailsToggle,
+}: EmployeeCardProps) {
   const rowsByCode = new Map<string, EmployeeReport['rows']>()
 
   for (const row of employeeReport.rows) {
@@ -26,56 +33,33 @@ export function EmployeeCard({ employeeReport, calculation }: EmployeeCardProps)
     }
   }
 
-  const hasWarnings = Boolean(calculation?.skippedCodes.length)
-
   return (
-    <article className="employee-card">
-      <header className="employee-header">
-        <div className="employee-title-block">
-          <span className="employee-id">{employeeReport.employeeId}</span>
-          <span className={`employee-badge ${hasWarnings ? 'warning' : 'ok'}`}>
-            {hasWarnings ? 'Ikke-støttede koder' : 'Klar'}
-          </span>
+    <>
+      <dl className="pc-stats">
+        <div className="pc-stat">
+          <dt>Opprinnelig sluttdato</dt>
+          <dd>{calculation ? formatDate(calculation.initialEndDate) : '—'}</dd>
         </div>
-
-        <div className="final-date-box">
-          <span className="final-date-label">Ny sluttdato</span>
-          <span className="final-date-value">
-            {calculation ? formatDate(calculation.finalEndDate) : '—'}
-          </span>
+        <div className="pc-stat">
+          <dt>Regelsteg</dt>
+          <dd>{calculation ? calculation.steps.length : '—'}</dd>
         </div>
-      </header>
-
-      <div className="employee-meta">
-        <div className="meta-cell">
-          <span className="meta-label">Opprinnelig sluttdato</span>
-          <span className="meta-value">
-            {calculation ? formatDate(calculation.initialEndDate) : '—'}
-          </span>
+        <div className="pc-stat">
+          <dt>Feriegrunnlagsdager</dt>
+          <dd>{calculation ? formatNumber(calculation.vacationBaseDays) : '—'}</dd>
         </div>
-        <div className="meta-cell">
-          <span className="meta-label">Regelsteg</span>
-          <span className="meta-value">{calculation ? calculation.steps.length : '—'}</span>
+        <div className="pc-stat">
+          <dt>Feriedager lagt til</dt>
+          <dd>{calculation ? formatNumber(calculation.vacationDays) : '—'}</dd>
         </div>
-        <div className="meta-cell">
-          <span className="meta-label">Feriegrunnlagsdager</span>
-          <span className="meta-value">
-            {calculation ? formatNumber(calculation.vacationBaseDays) : '—'}
-          </span>
-        </div>
-        <div className="meta-cell">
-          <span className="meta-label">Feriedager lagt til</span>
-          <span className="meta-value">
-            {calculation ? formatNumber(calculation.vacationDays) : '—'}
-          </span>
-        </div>
-        <div className="meta-cell">
-          <span className="meta-label">Behandlede rader</span>
-          <span className="meta-value">
+        <div className="pc-stat">
+          <dt>Behandlede rader</dt>
+          <dd>
             {calculation ? calculation.processedRows : employeeReport.rows.length}
-          </span>
+            <small>av {employeeReport.rows.length}</small>
+          </dd>
         </div>
-      </div>
+      </dl>
 
       {calculation?.skippedCodes.length ? (
         <div className="inline-warning">
@@ -83,13 +67,22 @@ export function EmployeeCard({ employeeReport, calculation }: EmployeeCardProps)
         </div>
       ) : null}
 
-      <div className="code-groups">
-        {Array.from(rowsByCode.entries()).map(([code, codeRows]) => (
-          <CodeGroupDetails key={`${employeeReport.employeeId}-${code}`} code={code} rows={codeRows} />
-        ))}
-      </div>
+      <div className="pc-section-title">Fravær etter kategori</div>
 
-      {calculation ? <CalculationStepsDetails calculation={calculation} /> : null}
-    </article>
+      {Array.from(rowsByCode.entries()).map(([code, codeRows]) => (
+        <CodeGroupDetails key={`${employeeReport.employeeId}-${code}`} code={code} rows={codeRows} />
+      ))}
+
+      {calculation ? (
+        <>
+          <div className="pc-section-title">Beregning</div>
+          <CalculationStepsDetails
+            calculation={calculation}
+            open={calcDetailsOpen}
+            onToggle={onCalcDetailsToggle}
+          />
+        </>
+      ) : null}
+    </>
   )
 }

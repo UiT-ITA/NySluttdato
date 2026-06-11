@@ -40,6 +40,7 @@ export interface ParsedWorkbook {
     rowNumber: number
     reason: string
     code?: string
+    cells?: string[]
   }>
 }
 
@@ -152,6 +153,7 @@ export function parseWorkbook({
         rowNumber,
         reason: 'Mangler ansatt-, kode- eller datoverdier.',
         code: code || undefined,
+        cells: formatRawCells(row),
       })
       return
     }
@@ -193,6 +195,7 @@ export function parseWorkbook({
           rowNumber,
           reason: 'Mangler ansatt-, kode-, dato- eller timeverdier i Ammefri-arket.',
           code: code || undefined,
+          cells: formatRawCells(row),
         })
         return
       }
@@ -923,6 +926,30 @@ function toCleanString(value: SpreadsheetCell): string {
   }
 
   return ''
+}
+
+function formatRawCells(row: SpreadsheetCell[]): string[] {
+  const cells = row.map((cell) => {
+    if (cell == null) {
+      return ''
+    }
+
+    if (cell instanceof Date) {
+      return Number.isNaN(cell.getTime()) ? 'ugyldig dato' : formatDate(cell)
+    }
+
+    if (typeof cell === 'string' || typeof cell === 'number' || typeof cell === 'boolean') {
+      return toCleanString(cell)
+    }
+
+    return String(cell)
+  })
+
+  while (cells.length > 0 && cells[cells.length - 1] === '') {
+    cells.pop()
+  }
+
+  return cells
 }
 
 function isEmptyRow(row: SpreadsheetCell[]): boolean {

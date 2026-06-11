@@ -124,7 +124,7 @@ export function PasteDataModal({ open, onClose, onApply }: PasteDataModalProps) 
 
               {previewRows.length > 0 ? (
                 <div className="table-wrap">
-                  <table className="data-table">
+                  <table className="pc-table">
                     <thead>
                       <tr>
                         <th>Rad</th>
@@ -168,6 +168,11 @@ export function PasteDataModal({ open, onClose, onApply }: PasteDataModalProps) 
                     {preview.skippedRows.map((row) => (
                       <li key={`${row.rowNumber}-${row.reason}`}>
                         Rad {row.rowNumber}: {row.reason}
+                        <div className="skipped-row-cells">
+                          {row.cells?.length
+                            ? row.cells.map((cell) => cell || '(tom)').join(' · ')
+                            : '(ingen celleverdier funnet)'}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -178,12 +183,12 @@ export function PasteDataModal({ open, onClose, onApply }: PasteDataModalProps) 
         </div>
 
         <footer className="modal-footer">
-          <button type="button" className="modal-button" onClick={onClose}>
+          <button type="button" className="pc-btn" onClick={onClose}>
             Avbryt
           </button>
           <button
             type="button"
-            className="modal-button primary"
+            className="pc-btn pc-btn-primary"
             onClick={handleApply}
             disabled={!canApply}
             title={canApply ? undefined : 'Lim inn minst én gyldig rad først'}

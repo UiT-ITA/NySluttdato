@@ -7,6 +7,8 @@ import {
 
 interface CalculationStepsDetailsProps {
   calculation: EmployeeCalculation
+  open?: boolean
+  onToggle?: (open: boolean) => void
 }
 
 function getStepBasisText(step: EmployeeCalculation['steps'][number]): string {
@@ -45,7 +47,7 @@ function getStepTypeText(step: EmployeeCalculation['steps'][number]): string {
   return step.additionMode === 'working' ? 'Direkte (arb.)' : 'Direkte (kal.)'
 }
 
-export function CalculationStepsDetails({ calculation }: CalculationStepsDetailsProps) {
+export function CalculationStepsDetails({ calculation, open, onToggle }: CalculationStepsDetailsProps) {
   const calculationSteps = calculation.steps
 
   if (!calculationSteps.length) {
@@ -55,54 +57,59 @@ export function CalculationStepsDetails({ calculation }: CalculationStepsDetails
   const totalAdded = calculationSteps.reduce((sum, step) => sum + step.appliedDaysToAdd, 0)
 
   return (
-    <div className="code-groups calc-steps-section">
-      <details className="code-group-card">
-        <summary className="code-group-summary">
-          <div className="code-group-title">
-            <span className="code-tag">Σ</span>
-            <h3>Beregningssteg</h3>
-          </div>
+    <details
+      id="beregning-details"
+      className="pc-cat"
+      open={open}
+      onToggle={(event) => onToggle?.((event.target as HTMLDetailsElement).open)}
+    >
+      <summary className="pc-cat-head">
+        <span className="pc-caret" />
+        <h3 style={{ fontWeight: 600 }}>
+          {formatDate(calculation.initialEndDate)}{' '}
+          <span style={{ color: 'var(--pc-text-dim)' }}>→</span>{' '}
+          <b style={{ color: 'var(--pc-accent)' }}>{formatDate(calculation.finalEndDate)}</b>
+        </h3>
+        <div className="spacer" />
+        <span className="pc-pill">
+          <b>{calculationSteps.length}</b> steg
+        </span>
+        <span className="pc-pill">
+          <b>+{formatNumber(totalAdded)}</b> d
+        </span>
+        <span className="pc-link">{open ? 'Skjul detaljer' : 'Vis detaljer'}</span>
+      </summary>
 
-          <div className="summary-pills">
-            <span className="pill">{calculationSteps.length} steg</span>
-            <span className="pill">+{formatNumber(totalAdded)} d</span>
-            <span className="pill rule">{formatDate(calculation.finalEndDate)}</span>
-          </div>
-        </summary>
-
-        <div className="code-group-content">
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Steg</th>
-                  <th>Type</th>
-                  <th>Grunnlag</th>
-                  <th>Rått bidrag</th>
-                  <th>Lagt til</th>
-                  <th>Feriegrunnlag</th>
-                  <th>Sluttdato</th>
-                </tr>
-              </thead>
-              <tbody>
-                {calculationSteps.map((step) => (
-                  <tr className="derived-rule-row" key={step.id}>
-                    <td className="cell-code">{step.label}</td>
-                    <td>{getStepTypeText(step)}</td>
-                    <td>{getStepBasisText(step)}</td>
-                    <td>{formatPreciseNumber(step.rawDaysToAdd)} d</td>
-                    <td className="cell-accent">{formatNumber(step.appliedDaysToAdd)} d</td>
-                    <td>
-                      {step.code === 'VACATION' ? '—' : `${formatPreciseNumber(step.vacationBaseDays ?? 0)} d`}
-                    </td>
-                    <td>{formatDate(step.nextEndDate)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </details>
-    </div>
+      <div className="table-wrap">
+        <table className="pc-table">
+          <thead>
+            <tr>
+              <th>Steg</th>
+              <th>Type</th>
+              <th>Grunnlag</th>
+              <th className="num">Rått bidrag</th>
+              <th className="num">Lagt til</th>
+              <th className="num">Feriegrunnlag</th>
+              <th className="num">Sluttdato</th>
+            </tr>
+          </thead>
+          <tbody>
+            {calculationSteps.map((step) => (
+              <tr key={step.id}>
+                <td className="strong">{step.label}</td>
+                <td className="dim">{getStepTypeText(step)}</td>
+                <td>{getStepBasisText(step)}</td>
+                <td className="num">{formatPreciseNumber(step.rawDaysToAdd)} d</td>
+                <td className="num accent">+{formatNumber(step.appliedDaysToAdd)} d</td>
+                <td className="num dim">
+                  {step.code === 'VACATION' ? '—' : `${formatPreciseNumber(step.vacationBaseDays ?? 0)} d`}
+                </td>
+                <td className="num strong">{formatDate(step.nextEndDate)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
   )
 }
