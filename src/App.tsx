@@ -126,11 +126,13 @@ function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <img className="topbar-logo" src={uitLogo} alt="UiT Norges arktiske universitet" />
-        <div className="topbar-sep" />
-        <div className="topbar-appname">
-          PhD Checker
-          <small>Fastsettelse av sluttdato</small>
+        <div className="topbar-brand">
+          <img className="topbar-logo" src={uitLogo} alt="UiT Norges arktiske universitet" />
+          <div className="topbar-sep" />
+          <div className="topbar-appname">
+            PhD Checker
+            <small>Fastsettelse av sluttdato</small>
+          </div>
         </div>
         <div className="spacer" />
         <div className="topbar-result">
@@ -291,31 +293,11 @@ function App() {
         </aside>
 
         <main className="main">
-          {report?.skippedRows.length ? (
-            <details className="pc-cat warning-panel">
-              <summary className="pc-cat-head">
-                <span className="pc-caret" />
-                <h3>{report.skippedRows.length} hoppet over rader</h3>
-              </summary>
-              <ul>
-                {report.skippedRows.map((row) => (
-                  <li key={`${row.rowNumber}-${row.reason}`}>
-                    Rad {row.rowNumber}: {row.reason}
-                    <div className="skipped-row-cells">
-                      {row.cells?.length
-                        ? row.cells.map((cell) => cell || '(tom)').join(' · ')
-                        : '(ingen celleverdier funnet)'}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ) : null}
-
           {selectedEmployee ? (
             <EmployeeCard
               employeeReport={selectedEmployee}
               calculation={calculation ?? undefined}
+              skippedRows={report?.skippedRows}
               calcDetailsOpen={calcDetailsOpen}
               onCalcDetailsToggle={setCalcDetailsOpen}
             />
@@ -343,6 +325,27 @@ function App() {
               <p>Beregningsresultater, kodegrupperinger og forlengelsessteg vises her.</p>
             </div>
           )}
+
+          {!selectedEmployee && report?.skippedRows.length ? (
+            <details className="pc-cat warning-panel">
+              <summary className="pc-cat-head">
+                <span className="pc-caret" />
+                <h3>{report.skippedRows.length} hoppet over rader</h3>
+              </summary>
+              <ul>
+                {report.skippedRows.map((row) => (
+                  <li key={`${row.rowNumber}-${row.reason}`}>
+                    Rad {row.rowNumber}: {row.reason}
+                    <div className="skipped-row-cells">
+                      {row.cells?.length
+                        ? row.cells.map((cell) => cell || '(tom)').join(' · ')
+                        : '(ingen celleverdier funnet)'}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
 
           <div className="pc-section-title">Regler</div>
           <details className="pc-cat">

@@ -6,6 +6,10 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* Golvet for sidebredden. Smalere vindu enn dette → hele siden får en
+     horisontal scrollbar, og alt innhold fyller fortsatt hele sidebredden
+     (topplinje, kort osv. strekker seg til .app sin bredde, ikke viewporten). */
+  min-width: 360px;
 }
 
 /* ═══════════════════════════════════════════
@@ -16,8 +20,9 @@
   position: relative;
   overflow: hidden;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 14px 32px;
   background: var(--pc-navy);
   color: var(--pc-hero-text);
@@ -49,6 +54,12 @@
 .topbar > * {
   position: relative;
   z-index: 1;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .topbar-logo {
@@ -85,6 +96,7 @@
 
 .topbar-result {
   text-align: right;
+  margin-left: auto;
 }
 
 .topbar-result-label {
@@ -150,18 +162,43 @@
    HOVEDGRID: sidemeny + hovedflate
    ═══════════════════════════════════════════ */
 
+/* Mobil-først: én kolonne. min-width er sidens golv — smalere vindu enn dette
+   gir én scrollbar på hele siden, og alt i griddet fyller fortsatt full bredde.
+   minmax(0, 1fr) + min-width:0 på cellene lar brede tabeller scrolle INNI
+   boksene sine i stedet for å dra griddet bredere. */
 .layout {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   padding: 20px 24px 28px;
   align-items: start;
-  width: 100%;
+  min-width: 360px;
 }
 
-@media (max-width: 980px) {
+.sidebar,
+.main {
+  min-width: 0;
+}
+
+/* Hovedflaten er en query-container, så nøkkeltallstripen kan reagere på SIN
+   EGEN bredde – ikke vindusbredden. Da fortsetter den å stå 5-på-rad når
+   sidemenyen forsvinner (hovedflaten blir jo bredere), og stables først når
+   den faktisk blir for smal for fem kolonner. */
+.main {
+  container-type: inline-size;
+}
+
+/* Sidemenyen er selv et grid — kortene er grid-celler med min-width:auto, så
+   uten dette ville et kort med lang tekst nekte å krympe under innholdet sitt
+   og dytte siden bredere enn golvet. */
+.sidebar > * {
+  min-width: 0;
+}
+
+/* Bred skjerm: sidemeny + hovedflate side om side */
+@media (min-width: 1100px) {
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 340px minmax(0, 1fr);
   }
 }
 
@@ -502,11 +539,14 @@ input[type='file'] {
 
 /* ---------- Nøkkeltall ---------- */
 
+/* Samme to tilstander som hovedgriddet: stablet (full bredde per celle) på
+   smal skjerm, fem like kolonner på bred. 1px gap mot bakgrunnsfargen tegner
+   skillelinjene. */
 .pc-stats {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  background: var(--pc-surface);
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--pc-line);
   border: 1px solid var(--pc-line);
   border-radius: 10px;
   box-shadow: var(--pc-shadow);
@@ -514,13 +554,18 @@ input[type='file'] {
   margin: 0;
 }
 
-.pc-stat {
-  padding: 14px 20px;
-  border-left: 1px solid var(--pc-line);
+/* 5-på-rad så snart hovedflaten er bred nok til fem lesbare celler, ellers
+   stablet. Terskelen gjelder hovedflatens egen bredde (container), ikke
+   vindusbredden – så byttet skjer uavhengig av når sidemenyen kollapser. */
+@container (min-width: 680px) {
+  .pc-stats {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
-.pc-stat:first-child {
-  border-left: none;
+.pc-stat {
+  padding: 14px 20px;
+  background: var(--pc-surface);
 }
 
 .pc-stat dt {
@@ -584,8 +629,9 @@ input[type='file'] {
 
 .pc-cat-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 6px 12px;
   padding: 11px 16px;
   cursor: pointer;
 }
@@ -752,7 +798,7 @@ details[open] > .pc-cat-head {
 }
 
 .warning-panel {
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
 
 .warning-panel .pc-cat-head h3 {
@@ -1116,5 +1162,47 @@ details[open] > .pc-cat-head {
 @media (max-width: 720px) {
   .modal-overlay {
     padding: 16px 8px;
+  }
+
+  /* Kompakt topplinje: navnet under logoen (uten skillelinje), og «Ny sluttdato»
+     skjules her – den vises uansett i resultatkortet i sidemenyen. */
+  .topbar-brand {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .topbar-sep {
+    display: none;
+  }
+
+  .topbar-result {
+    display: none;
+  }
+}
+
+/* Mindre luft når det er virkelig trangt */
+@media (max-width: 480px) {
+  .topbar {
+    padding: 12px 14px;
+  }
+
+  .layout {
+    padding: 14px 12px 22px;
+    gap: 12px;
+  }
+}
+
+/* Ved/under sidegolvet (360px) dukker den horisontale scrollbaren opp – da
+   fjernes sidepaddingen helt, så hver piksel av bredden går til innholdet. */
+@media (max-width: 360px) {
+  .topbar {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .layout {
+    padding-left: 0;
+    padding-right: 0;
   }
 }

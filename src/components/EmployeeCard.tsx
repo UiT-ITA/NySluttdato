@@ -12,6 +12,7 @@ type EmployeeReport = ParsedWorkbook['employees'][number]
 interface EmployeeCardProps {
   employeeReport: EmployeeReport
   calculation?: EmployeeCalculation
+  skippedRows?: ParsedWorkbook['skippedRows']
   calcDetailsOpen?: boolean
   onCalcDetailsToggle?: (open: boolean) => void
 }
@@ -19,6 +20,7 @@ interface EmployeeCardProps {
 export function EmployeeCard({
   employeeReport,
   calculation,
+  skippedRows,
   calcDetailsOpen,
   onCalcDetailsToggle,
 }: EmployeeCardProps) {
@@ -65,6 +67,27 @@ export function EmployeeCard({
         <div className="inline-warning">
           ⚠ Ikke-støttede fraværskoder hoppet over: {calculation.skippedCodes.join(', ')}
         </div>
+      ) : null}
+
+      {skippedRows?.length ? (
+        <details className="pc-cat warning-panel">
+          <summary className="pc-cat-head">
+            <span className="pc-caret" />
+            <h3>{skippedRows.length} hoppet over rader</h3>
+          </summary>
+          <ul>
+            {skippedRows.map((row) => (
+              <li key={`${row.rowNumber}-${row.reason}`}>
+                Rad {row.rowNumber}: {row.reason}
+                <div className="skipped-row-cells">
+                  {row.cells?.length
+                    ? row.cells.map((cell) => cell || '(tom)').join(' · ')
+                    : '(ingen celleverdier funnet)'}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       <div className="pc-section-title">Fravær etter kategori</div>
