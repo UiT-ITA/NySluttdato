@@ -29,7 +29,7 @@ export interface GeneratePdfReportOptions {
 
 const PAGE_MARGIN_X = 14
 const PAGE_MARGIN_Y = 16
-const APP_NAME = 'PhDChecker'
+const APP_NAME = 'NySluttdato'
 const COLOR_ACCENT: [number, number, number] = [91, 156, 245]
 const COLOR_TEXT: [number, number, number] = [30, 32, 36]
 const COLOR_MUTED: [number, number, number] = [110, 114, 124]
@@ -522,7 +522,7 @@ function buildFileName(employeeId: string): string {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   const safeEmployeeId = employeeId.replace(/[^\w.-]+/g, '_') || 'ansatt'
-  return `phdchecker_${safeEmployeeId}_${year}-${month}-${day}.pdf`
+  return `nysluttdato_${safeEmployeeId}_${year}-${month}-${day}.pdf`
 }
 
 export function generateEmployeePdfReport(options: GeneratePdfReportOptions): void {

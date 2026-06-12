@@ -130,7 +130,7 @@ function App() {
           <img className="topbar-logo" src={uitLogo} alt="UiT Norges arktiske universitet" />
           <div className="topbar-sep" />
           <div className="topbar-appname">
-            PhD Checker
+            NySluttdato
             <small>Fastsettelse av sluttdato</small>
           </div>
         </div>

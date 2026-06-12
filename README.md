@@ -1,6 +1,6 @@
-# PhDChecker
+# NySluttdato
 
-PhDChecker er et verktøy for å beregne forlengelse av ansettelsesperioder ved fravær for stipendiater og postdoktorer.
+NySluttdato er et verktøy for å beregne forlengelse av ansettelsesperioder ved fravær for stipendiater og postdoktorer.
 
 ## Teknologistakk
 
